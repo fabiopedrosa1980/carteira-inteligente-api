@@ -14,16 +14,16 @@ func SeedIfEmpty(db *gorm.DB) error {
 	}
 
 	stocks := []domain.Stock{
-		{Ticker: "BBAS3", Nome: "Banco do Brasil", Setor: "Bancário", Nota: 8, PrecoAtual: 55.2, VariacaoHoje: 0, DY: 8.5},
-		{Ticker: "BBSE3", Nome: "BB Seguridade", Setor: "Seguros", Nota: 9, PrecoAtual: 34.8, VariacaoHoje: 0, DY: 9.2},
-		{Ticker: "PETR4", Nome: "Petrobras", Setor: "Petróleo & Gás", Nota: 9, PrecoAtual: 37.9, VariacaoHoje: 0, DY: 15.3},
-		{Ticker: "ITUB3", Nome: "Itaú Unibanco", Setor: "Bancário", Nota: 4, PrecoAtual: 35.1, VariacaoHoje: 0, DY: 3.5},
-		{Ticker: "BRAP4", Nome: "Bradespar", Setor: "Mineração", Nota: 9, PrecoAtual: 17.8, VariacaoHoje: 0, DY: 10.1},
-		{Ticker: "CMIG4", Nome: "Cemig", Setor: "Energia Elétrica", Nota: 9, PrecoAtual: 11.95, VariacaoHoje: 0, DY: 10.8},
-		{Ticker: "CPFE3", Nome: "CPFL Energia", Setor: "Energia Elétrica", Nota: 7, PrecoAtual: 35.5, VariacaoHoje: 0, DY: 7.2},
-		{Ticker: "CSMG3", Nome: "Copasa", Setor: "Saneamento", Nota: 8, PrecoAtual: 20.4, VariacaoHoje: 0, DY: 8.1},
-		{Ticker: "ISAE4", Nome: "Isa Cteep", Setor: "Energia Elétrica", Nota: 9, PrecoAtual: 25.3, VariacaoHoje: 0, DY: 9.6},
-		{Ticker: "CXSE3", Nome: "Caixa Seguridade", Setor: "Seguros", Nota: 8, PrecoAtual: 14.9, VariacaoHoje: 0, DY: 8.3},
+		{Ticker: "BBAS3", Name: "Banco do Brasil", Sector: "Bancário", Score: 8, CurrentPrice: 55.2, DailyChange: 0, DY: 8.5},
+		{Ticker: "BBSE3", Name: "BB Seguridade", Sector: "Seguros", Score: 9, CurrentPrice: 34.8, DailyChange: 0, DY: 9.2},
+		{Ticker: "PETR4", Name: "Petrobras", Sector: "Petróleo & Gás", Score: 9, CurrentPrice: 37.9, DailyChange: 0, DY: 15.3},
+		{Ticker: "ITUB3", Name: "Itaú Unibanco", Sector: "Bancário", Score: 4, CurrentPrice: 35.1, DailyChange: 0, DY: 3.5},
+		{Ticker: "BRAP4", Name: "Bradespar", Sector: "Mineração", Score: 9, CurrentPrice: 17.8, DailyChange: 0, DY: 10.1},
+		{Ticker: "CMIG4", Name: "Cemig", Sector: "Energia Elétrica", Score: 9, CurrentPrice: 11.95, DailyChange: 0, DY: 10.8},
+		{Ticker: "CPFE3", Name: "CPFL Energia", Sector: "Energia Elétrica", Score: 7, CurrentPrice: 35.5, DailyChange: 0, DY: 7.2},
+		{Ticker: "CSMG3", Name: "Copasa", Sector: "Saneamento", Score: 8, CurrentPrice: 20.4, DailyChange: 0, DY: 8.1},
+		{Ticker: "ISAE4", Name: "Isa Cteep", Sector: "Energia Elétrica", Score: 9, CurrentPrice: 25.3, DailyChange: 0, DY: 9.6},
+		{Ticker: "CXSE3", Name: "Caixa Seguridade", Sector: "Seguros", Score: 8, CurrentPrice: 14.9, DailyChange: 0, DY: 8.3},
 	}
 
 	for i := range stocks {

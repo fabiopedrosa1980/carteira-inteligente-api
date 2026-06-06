@@ -15,11 +15,11 @@ var (
 type Stock struct {
 	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Ticker       string    `gorm:"uniqueIndex;not null"     json:"ticker"`
-	Nome         string    `gorm:"not null"                 json:"nome"`
-	Setor        string    `json:"setor"`
-	Nota         float64   `json:"nota"`
-	PrecoAtual   float64   `json:"preco_atual"`
-	VariacaoHoje float64   `json:"variacao_hoje"`
+	Name         string    `gorm:"not null"                 json:"name"`
+	Sector       string    `json:"sector"`
+	Score        float64   `json:"score"`
+	CurrentPrice float64   `json:"current_price"`
+	DailyChange  float64   `json:"daily_change"`
 	DY           float64   `json:"dy"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -29,13 +29,13 @@ func (s *Stock) Validate() error {
 	if strings.TrimSpace(s.Ticker) == "" {
 		return ErrValidation
 	}
-	if strings.TrimSpace(s.Nome) == "" {
+	if strings.TrimSpace(s.Name) == "" {
 		return ErrValidation
 	}
-	if s.Nota < 0 || s.Nota > 10 {
+	if s.Score < 0 || s.Score > 10 {
 		return ErrValidation
 	}
-	if s.PrecoAtual <= 0 {
+	if s.CurrentPrice <= 0 {
 		return ErrValidation
 	}
 	if s.DY < 0 {

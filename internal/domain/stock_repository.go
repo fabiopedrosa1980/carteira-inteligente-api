@@ -1,8 +1,8 @@
 package domain
 
 type StockQuery struct {
-	Setor string
-	Sort  string
+	Sector string
+	Sort   string
 }
 
 type StockRepository interface {

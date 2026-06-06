@@ -86,7 +86,7 @@ func (s *DividendService) GetMonthlySummary(year int) ([]dto.MonthSummaryRespons
 		}
 		for m := range byMonth {
 			if entry, ok := byMonth[m][stockID]; ok {
-				entry.price = stock.PrecoAtual
+				entry.price = stock.CurrentPrice
 				byMonth[m][stockID] = entry
 			}
 		}

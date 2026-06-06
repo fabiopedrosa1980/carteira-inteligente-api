@@ -39,11 +39,11 @@ func (s *StockService) UpdateStock(id uint, updated *domain.Stock) (*domain.Stoc
 		return nil, err
 	}
 	existing.Ticker = updated.Ticker
-	existing.Nome = updated.Nome
-	existing.Setor = updated.Setor
-	existing.Nota = updated.Nota
-	existing.PrecoAtual = updated.PrecoAtual
-	existing.VariacaoHoje = updated.VariacaoHoje
+	existing.Name = updated.Name
+	existing.Sector = updated.Sector
+	existing.Score = updated.Score
+	existing.CurrentPrice = updated.CurrentPrice
+	existing.DailyChange = updated.DailyChange
 	existing.DY = updated.DY
 
 	if err := existing.Validate(); err != nil {

@@ -29,11 +29,11 @@ func (h *StockHandler) CreateStock(c *gin.Context) {
 
 	stock := &domain.Stock{
 		Ticker:       req.Ticker,
-		Nome:         req.Nome,
-		Setor:        req.Setor,
-		Nota:         req.Nota,
-		PrecoAtual:   req.PrecoAtual,
-		VariacaoHoje: req.VariacaoHoje,
+		Name:         req.Name,
+		Sector:       req.Sector,
+		Score:        req.Score,
+		CurrentPrice: req.CurrentPrice,
+		DailyChange:  req.DailyChange,
 		DY:           req.DY,
 	}
 
@@ -74,14 +74,14 @@ func (h *StockHandler) GetStock(c *gin.Context) {
 
 func (h *StockHandler) ListStocks(c *gin.Context) {
 	sort := c.Query("sort")
-	if sort != "" && sort != "nota" && sort != "variacao" && sort != "dy" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sort value; accepted: nota, variacao, dy"})
+	if sort != "" && sort != "score" && sort != "daily_change" && sort != "dy" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sort value; accepted: score, daily_change, dy"})
 		return
 	}
 
 	query := domain.StockQuery{
-		Setor: c.Query("setor"),
-		Sort:  sort,
+		Sector: c.Query("sector"),
+		Sort:   sort,
 	}
 
 	stocks, err := h.service.ListStocks(query)
@@ -108,11 +108,11 @@ func (h *StockHandler) UpdateStock(c *gin.Context) {
 
 	updated := &domain.Stock{
 		Ticker:       req.Ticker,
-		Nome:         req.Nome,
-		Setor:        req.Setor,
-		Nota:         req.Nota,
-		PrecoAtual:   req.PrecoAtual,
-		VariacaoHoje: req.VariacaoHoje,
+		Name:         req.Name,
+		Sector:       req.Sector,
+		Score:        req.Score,
+		CurrentPrice: req.CurrentPrice,
+		DailyChange:  req.DailyChange,
 		DY:           req.DY,
 	}
 

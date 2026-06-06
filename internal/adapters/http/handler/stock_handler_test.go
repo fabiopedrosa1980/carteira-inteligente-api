@@ -46,11 +46,11 @@ func TestCreateStock_201(t *testing.T) {
 	r := setupRouter(t)
 	body := toJSON(t, map[string]any{
 		"ticker":        "PETR4",
-		"nome":          "Petrobras",
-		"setor":         "Energia",
-		"nota":          8.5,
-		"preco_atual":   35.50,
-		"variacao_hoje": -1.2,
+		"name":          "Petrobras",
+		"sector":         "Energia",
+		"score":          8.5,
+		"current_price":   35.50,
+		"daily_change": -1.2,
 		"dy":            6.5,
 	})
 	w := httptest.NewRecorder()
@@ -75,8 +75,8 @@ func TestCreateStock_201_WithoutDY(t *testing.T) {
 	r := setupRouter(t)
 	body := toJSON(t, map[string]any{
 		"ticker":      "BBDC4",
-		"nome":        "Bradesco",
-		"preco_atual": 20.0,
+		"name":        "Bradesco",
+		"current_price": 20.0,
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
@@ -95,7 +95,7 @@ func TestCreateStock_201_WithoutDY(t *testing.T) {
 
 func TestCreateStock_400_MissingTicker(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"nome": "Petrobras", "preco_atual": 35.50})
+	body := toJSON(t, map[string]any{"name": "Petrobras", "current_price": 35.50})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
@@ -108,7 +108,7 @@ func TestCreateStock_400_MissingTicker(t *testing.T) {
 
 func TestCreateStock_400_InvalidNota(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"ticker": "PETR4", "nome": "Petrobras", "preco_atual": 35.50, "nota": 15.0})
+	body := toJSON(t, map[string]any{"ticker": "PETR4", "name": "Petrobras", "current_price": 35.50, "score": 15.0})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
@@ -121,7 +121,7 @@ func TestCreateStock_400_InvalidNota(t *testing.T) {
 
 func TestCreateStock_400_PrecoNegativo(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"ticker": "PETR4", "nome": "Petrobras", "preco_atual": -5.0})
+	body := toJSON(t, map[string]any{"ticker": "PETR4", "name": "Petrobras", "current_price": -5.0})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
@@ -134,7 +134,7 @@ func TestCreateStock_400_PrecoNegativo(t *testing.T) {
 
 func TestCreateStock_409_Duplicate(t *testing.T) {
 	r := setupRouter(t)
-	payload := map[string]any{"ticker": "VALE3", "nome": "Vale", "preco_atual": 65.0}
+	payload := map[string]any{"ticker": "VALE3", "name": "Vale", "current_price": 65.0}
 	body := toJSON(t, payload)
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
@@ -153,7 +153,7 @@ func TestCreateStock_409_Duplicate(t *testing.T) {
 
 func TestGetStock_200(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"ticker": "ITUB4", "nome": "Itaú", "preco_atual": 30.0})
+	body := toJSON(t, map[string]any{"ticker": "ITUB4", "name": "Itaú", "current_price": 30.0})
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -202,7 +202,7 @@ func TestListStocks_200_Empty(t *testing.T) {
 func TestListStocks_FilterSetor(t *testing.T) {
 	r := setupRouter(t)
 	create := func(ticker, nome, setor string, preco float64) {
-		body := toJSON(t, map[string]any{"ticker": ticker, "nome": nome, "setor": setor, "preco_atual": preco})
+		body := toJSON(t, map[string]any{"ticker": ticker, "name": nome, "sector": setor, "current_price": preco})
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 		req.Header.Set("Content-Type", "application/json")
 		r.ServeHTTP(httptest.NewRecorder(), req)
@@ -211,7 +211,7 @@ func TestListStocks_FilterSetor(t *testing.T) {
 	create("VALE3", "Vale", "Mineração", 65.0)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/stocks?setor=Energia", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/stocks?sector=Energia", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -238,9 +238,9 @@ func TestListStocks_400_InvalidSort(t *testing.T) {
 func TestListStocks_SortByNota(t *testing.T) {
 	r := setupRouter(t)
 	for _, s := range []map[string]any{
-		{"ticker": "A1", "nome": "A", "preco_atual": 10.0, "nota": 5.0},
-		{"ticker": "B2", "nome": "B", "preco_atual": 10.0, "nota": 9.0},
-		{"ticker": "C3", "nome": "C", "preco_atual": 10.0, "nota": 3.0},
+		{"ticker": "A1", "name": "A", "current_price": 10.0, "score": 5.0},
+		{"ticker": "B2", "name": "B", "current_price": 10.0, "score": 9.0},
+		{"ticker": "C3", "name": "C", "current_price": 10.0, "score": 3.0},
 	} {
 		body := toJSON(t, s)
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
@@ -249,7 +249,7 @@ func TestListStocks_SortByNota(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/stocks?sort=nota", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/stocks?sort=score", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -264,7 +264,7 @@ func TestListStocks_SortByNota(t *testing.T) {
 
 func TestUpdateStock_DY(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"ticker": "ITSA4", "nome": "Itaúsa", "preco_atual": 10.0, "dy": 3.0})
+	body := toJSON(t, map[string]any{"ticker": "ITSA4", "name": "Itaúsa", "current_price": 10.0, "dy": 3.0})
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
 	wc := httptest.NewRecorder()
@@ -274,7 +274,7 @@ func TestUpdateStock_DY(t *testing.T) {
 	json.Unmarshal(wc.Body.Bytes(), &created)
 	id := int(created["id"].(float64))
 
-	updateBody := toJSON(t, map[string]any{"ticker": "ITSA4", "nome": "Itaúsa", "preco_atual": 10.0, "dy": 8.5})
+	updateBody := toJSON(t, map[string]any{"ticker": "ITSA4", "name": "Itaúsa", "current_price": 10.0, "dy": 8.5})
 	w := httptest.NewRecorder()
 	req2, _ := http.NewRequest(http.MethodPut, "/api/v1/stocks/"+strconv.Itoa(id), updateBody)
 	req2.Header.Set("Content-Type", "application/json")
@@ -293,9 +293,9 @@ func TestUpdateStock_DY(t *testing.T) {
 func TestListStocks_SortByDY(t *testing.T) {
 	r := setupRouter(t)
 	for _, s := range []map[string]any{
-		{"ticker": "X1", "nome": "X1", "preco_atual": 10.0, "dy": 2.0},
-		{"ticker": "X2", "nome": "X2", "preco_atual": 10.0, "dy": 9.0},
-		{"ticker": "X3", "nome": "X3", "preco_atual": 10.0, "dy": 5.0},
+		{"ticker": "X1", "name": "X1", "current_price": 10.0, "dy": 2.0},
+		{"ticker": "X2", "name": "X2", "current_price": 10.0, "dy": 9.0},
+		{"ticker": "X3", "name": "X3", "current_price": 10.0, "dy": 5.0},
 	} {
 		body := toJSON(t, s)
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
@@ -319,7 +319,7 @@ func TestListStocks_SortByDY(t *testing.T) {
 
 func TestDeleteStock_204(t *testing.T) {
 	r := setupRouter(t)
-	body := toJSON(t, map[string]any{"ticker": "BBAS3", "nome": "Banco do Brasil", "preco_atual": 25.0})
+	body := toJSON(t, map[string]any{"ticker": "BBAS3", "name": "Banco do Brasil", "current_price": 25.0})
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
 	wc := httptest.NewRecorder()

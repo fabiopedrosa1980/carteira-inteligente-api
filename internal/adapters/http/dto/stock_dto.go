@@ -5,33 +5,33 @@ import (
 )
 
 type CreateStockRequest struct {
-	Ticker       string  `json:"ticker"        binding:"required"`
-	Nome         string  `json:"nome"          binding:"required"`
-	Setor        string  `json:"setor"`
-	Nota         float64 `json:"nota"          binding:"min=0,max=10"`
-	PrecoAtual   float64 `json:"preco_atual"   binding:"gt=0"`
-	VariacaoHoje float64 `json:"variacao_hoje"`
+	Ticker       string  `json:"ticker"         binding:"required"`
+	Name         string  `json:"name"           binding:"required"`
+	Sector       string  `json:"sector"`
+	Score        float64 `json:"score"          binding:"min=0,max=10"`
+	CurrentPrice float64 `json:"current_price"  binding:"gt=0"`
+	DailyChange  float64 `json:"daily_change"`
 	DY           float64 `json:"dy"`
 }
 
 type UpdateStockRequest struct {
-	Ticker       string  `json:"ticker"        binding:"required"`
-	Nome         string  `json:"nome"          binding:"required"`
-	Setor        string  `json:"setor"`
-	Nota         float64 `json:"nota"          binding:"min=0,max=10"`
-	PrecoAtual   float64 `json:"preco_atual"   binding:"gt=0"`
-	VariacaoHoje float64 `json:"variacao_hoje"`
+	Ticker       string  `json:"ticker"         binding:"required"`
+	Name         string  `json:"name"           binding:"required"`
+	Sector       string  `json:"sector"`
+	Score        float64 `json:"score"          binding:"min=0,max=10"`
+	CurrentPrice float64 `json:"current_price"  binding:"gt=0"`
+	DailyChange  float64 `json:"daily_change"`
 	DY           float64 `json:"dy"`
 }
 
 type StockResponse struct {
 	ID           uint    `json:"id"`
 	Ticker       string  `json:"ticker"`
-	Nome         string  `json:"nome"`
-	Setor        string  `json:"setor"`
-	Nota         float64 `json:"nota"`
-	PrecoAtual   float64 `json:"preco_atual"`
-	VariacaoHoje float64 `json:"variacao_hoje"`
+	Name         string  `json:"name"`
+	Sector       string  `json:"sector"`
+	Score        float64 `json:"score"`
+	CurrentPrice float64 `json:"current_price"`
+	DailyChange  float64 `json:"daily_change"`
 	DY           float64 `json:"dy"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -41,11 +41,11 @@ func FromDomain(s *domain.Stock) StockResponse {
 	return StockResponse{
 		ID:           s.ID,
 		Ticker:       s.Ticker,
-		Nome:         s.Nome,
-		Setor:        s.Setor,
-		Nota:         s.Nota,
-		PrecoAtual:   s.PrecoAtual,
-		VariacaoHoje: s.VariacaoHoje,
+		Name:         s.Name,
+		Sector:       s.Sector,
+		Score:        s.Score,
+		CurrentPrice: s.CurrentPrice,
+		DailyChange:  s.DailyChange,
 		DY:           s.DY,
 		CreatedAt:    s.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:    s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),

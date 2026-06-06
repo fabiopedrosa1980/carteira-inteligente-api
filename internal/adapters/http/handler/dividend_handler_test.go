@@ -10,7 +10,7 @@ import (
 
 func createStock(t *testing.T, r interface{ ServeHTTP(http.ResponseWriter, *http.Request) }, ticker string, preco float64) int {
 	t.Helper()
-	body := toJSON(t, map[string]any{"ticker": ticker, "nome": ticker, "preco_atual": preco})
+	body := toJSON(t, map[string]any{"ticker": ticker, "name": ticker, "current_price": preco})
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

@@ -41,15 +41,15 @@ func (r *GormStockRepository) FindAll(query domain.StockQuery) ([]domain.Stock, 
 	var stocks []domain.Stock
 	db := r.db.Model(&domain.Stock{})
 
-	if query.Setor != "" {
-		db = db.Where("setor = ?", query.Setor)
+	if query.Sector != "" {
+		db = db.Where("sector = ?", query.Sector)
 	}
 
 	switch query.Sort {
-	case "nota":
-		db = db.Order("nota DESC")
-	case "variacao":
-		db = db.Order("variacao_hoje DESC")
+	case "score":
+		db = db.Order("score DESC")
+	case "daily_change":
+		db = db.Order("daily_change DESC")
 	case "dy":
 		db = db.Order("dy DESC")
 	}

@@ -52,11 +52,11 @@ Cria uma nova ação.
 ```json
 {
   "ticker": "PETR4",
-  "nome": "Petrobras",
-  "setor": "Petróleo & Gás",
-  "nota": 9,
-  "preco_atual": 37.90,
-  "variacao_hoje": -0.5,
+  "name": "Petrobras",
+  "sector": "Petróleo & Gás",
+  "score": 9,
+  "current_price": 37.90,
+  "daily_change": -0.5,
   "dy": 15.3
 }
 ```
@@ -66,11 +66,11 @@ Cria uma nova ação.
 {
   "id": 1,
   "ticker": "PETR4",
-  "nome": "Petrobras",
-  "setor": "Petróleo & Gás",
-  "nota": 9,
-  "preco_atual": 37.90,
-  "variacao_hoje": -0.5,
+  "name": "Petrobras",
+  "sector": "Petróleo & Gás",
+  "score": 9,
+  "current_price": 37.90,
+  "daily_change": -0.5,
   "dy": 15.3,
   "created_at": "2024-01-01T00:00:00-03:00",
   "updated_at": "2024-01-01T00:00:00-03:00"
@@ -87,8 +87,8 @@ Lista todas as ações com filtros opcionais.
 
 | Param | Tipo | Descrição |
 |---|---|---|
-| `setor` | string | Filtra por setor (ex: `Bancário`) |
-| `sort` | string | Ordena por `nota`, `variacao` ou `dy` |
+| `sector` | string | Filtra por setor (ex: `Bancário`) |
+| `sort` | string | Ordena por `score`, `daily_change` ou `dy` |
 
 **Resposta** `200 OK` — array de ações.
 
@@ -106,7 +106,7 @@ Retorna uma ação pelo ID.
 
 Atualiza uma ação existente.
 
-**Body** — mesmos campos do `POST /stocks`.
+**Body** — mesmos campos do `POST /stocks` (`ticker`, `name`, `sector`, `score`, `current_price`, `daily_change`, `dy`).
 
 **Resposta** `200 OK` — objeto atualizado.
 
