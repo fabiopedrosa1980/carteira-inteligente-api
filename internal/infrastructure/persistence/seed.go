@@ -32,23 +32,97 @@ func SeedIfEmpty(db *gorm.DB) error {
 		}
 	}
 
-	// paying months per stock for 2025
 	type entry struct {
 		ticker string
 		months []int
 		amount float64
+		typ    domain.DividendType
 	}
-	dividends := []entry{
-		{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.39},
-		{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.27},
-		{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 0.49},
-		{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.10},
-		{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 0.15},
-		{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.11},
-		{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.21},
-		{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.14},
-		{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.20},
-		{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.10},
+
+	// yearSeed define os pagamentos de cada ação por ano.
+	// Mesmos meses do seed 2025; amounts derivados do histórico real (Investidor10).
+	// BBAS3/ITUB3/CSMG3/ISAE4 → JCP predominante; demais → dividendo.
+	type yearSeed struct {
+		year      int
+		dividends []entry
+	}
+
+	seeds := []yearSeed{
+		{
+			year: 2021,
+			dividends: []entry{
+				{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.12, typ: domain.DividendTypeJCP},
+				{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.20, typ: domain.DividendTypeDividendo},
+				{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 0.60, typ: domain.DividendTypeDividendo},
+				{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.05, typ: domain.DividendTypeJCP},
+				{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 1.96, typ: domain.DividendTypeDividendo},
+				{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.22, typ: domain.DividendTypeDividendo},
+				{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.75, typ: domain.DividendTypeDividendo},
+				{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.25, typ: domain.DividendTypeJCP},
+				{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.37, typ: domain.DividendTypeJCP},
+				{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.12, typ: domain.DividendTypeDividendo},
+			},
+		},
+		{
+			year: 2022,
+			dividends: []entry{
+				{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.21, typ: domain.DividendTypeJCP},
+				{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.39, typ: domain.DividendTypeDividendo},
+				{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 2.93, typ: domain.DividendTypeDividendo},
+				{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.05, typ: domain.DividendTypeJCP},
+				{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 0.78, typ: domain.DividendTypeDividendo},
+				{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.19, typ: domain.DividendTypeDividendo},
+				{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.81, typ: domain.DividendTypeDividendo},
+				{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.13, typ: domain.DividendTypeJCP},
+				{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.27, typ: domain.DividendTypeJCP},
+				{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.16, typ: domain.DividendTypeDividendo},
+			},
+		},
+		{
+			year: 2023,
+			dividends: []entry{
+				{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.23, typ: domain.DividendTypeJCP},
+				{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.69, typ: domain.DividendTypeDividendo},
+				{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 1.53, typ: domain.DividendTypeDividendo},
+				{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.05, typ: domain.DividendTypeJCP},
+				{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 0.80, typ: domain.DividendTypeDividendo},
+				{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.08, typ: domain.DividendTypeDividendo},
+				{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.53, typ: domain.DividendTypeDividendo},
+				{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.56, typ: domain.DividendTypeJCP},
+				{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.61, typ: domain.DividendTypeJCP},
+				{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.25, typ: domain.DividendTypeDividendo},
+			},
+		},
+		{
+			year: 2024,
+			dividends: []entry{
+				{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.27, typ: domain.DividendTypeJCP},
+				{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.53, typ: domain.DividendTypeDividendo},
+				{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 1.29, typ: domain.DividendTypeDividendo},
+				{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.12, typ: domain.DividendTypeJCP},
+				{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 0.52, typ: domain.DividendTypeDividendo},
+				{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.08, typ: domain.DividendTypeDividendo},
+				{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.69, typ: domain.DividendTypeDividendo},
+				{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.69, typ: domain.DividendTypeJCP},
+				{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.55, typ: domain.DividendTypeJCP},
+				{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.27, typ: domain.DividendTypeDividendo},
+			},
+		},
+		{
+			year: 2025,
+			dividends: []entry{
+				{ticker: "BBAS3", months: []int{1, 4, 6, 9, 12}, amount: 0.39, typ: domain.DividendTypeJCP},
+				{ticker: "BBSE3", months: []int{1, 3, 6, 8, 11}, amount: 0.27, typ: domain.DividendTypeDividendo},
+				{ticker: "PETR4", months: []int{2, 5, 8, 11}, amount: 0.49, typ: domain.DividendTypeDividendo},
+				{ticker: "ITUB3", months: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, amount: 0.10, typ: domain.DividendTypeJCP},
+				{ticker: "BRAP4", months: []int{3, 6, 9, 12}, amount: 0.15, typ: domain.DividendTypeDividendo},
+				{ticker: "CMIG4", months: []int{3, 6, 9, 12}, amount: 0.11, typ: domain.DividendTypeDividendo},
+				{ticker: "CPFE3", months: []int{2, 5, 8, 11}, amount: 0.21, typ: domain.DividendTypeDividendo},
+				{ticker: "CSMG3", months: []int{4, 8, 12}, amount: 0.14, typ: domain.DividendTypeJCP},
+				{ticker: "ISAE4", months: []int{3, 6, 9, 12}, amount: 0.20, typ: domain.DividendTypeJCP},
+				{ticker: "CXSE3", months: []int{3, 6, 9, 12}, amount: 0.10, typ: domain.DividendTypeDividendo},
+			},
+		},
 	}
 
 	tickerToID := make(map[string]uint, len(stocks))
@@ -56,21 +130,23 @@ func SeedIfEmpty(db *gorm.DB) error {
 		tickerToID[s.Ticker] = s.ID
 	}
 
-	for _, e := range dividends {
-		id, ok := tickerToID[e.ticker]
-		if !ok {
-			continue
-		}
-		for _, m := range e.months {
-			d := domain.Dividend{
-				StockID: id,
-				Amount:  e.amount,
-				Month:   m,
-				Year:    2025,
-				Type:    domain.DividendTypeDividendo,
+	for _, ys := range seeds {
+		for _, e := range ys.dividends {
+			id, ok := tickerToID[e.ticker]
+			if !ok {
+				continue
 			}
-			if err := db.Create(&d).Error; err != nil {
-				return err
+			for _, m := range e.months {
+				d := domain.Dividend{
+					StockID: id,
+					Amount:  e.amount,
+					Month:   m,
+					Year:    ys.year,
+					Type:    e.typ,
+				}
+				if err := db.Create(&d).Error; err != nil {
+					return err
+				}
 			}
 		}
 	}
