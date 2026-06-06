@@ -1,38 +1,48 @@
 # Carteira Inteligente API
 
-API REST para gerenciamento de carteira de ações com histórico de dividendos.
+REST API for managing a stock portfolio with historical dividend data.
 
 ## Stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
-| Linguagem | Go 1.25 |
-| Framework HTTP | [Gin](https://github.com/gin-gonic/gin) v1.12 |
+| Language | Go 1.25 |
+| HTTP Framework | [Gin](https://github.com/gin-gonic/gin) v1.12 |
 | ORM | [GORM](https://gorm.io) v1.31 |
-| Banco de dados | SQLite (in-memory por padrão) |
-| Arquitetura | Clean Architecture (domain / application / adapters / infrastructure) |
-| IA assistente | [Claude Sonnet 4.6](https://claude.ai/code) (Anthropic) — geração de código, seed de dados históricos e documentação |
+| Database | SQLite (in-memory by default) |
+| Architecture | Clean Architecture (domain / application / adapters / infrastructure) |
+| AI Assistant | [Claude Sonnet 4.6](https://claude.ai/code) (Anthropic) — code generation, historical data seeding and documentation |
 
-## Arquitetura
+## Architecture
 
 ```
 cmd/api/            → entrypoint
 internal/
-  domain/           → entidades e interfaces de repositório
-  application/      → casos de uso (services)
+  domain/           → entities and repository interfaces
+  application/      → use cases (services)
   adapters/http/    → handlers, DTOs, router (Gin)
-  infrastructure/   → persistência GORM + seed
-pkg/middleware/     → CORS e logger
-scripts/            → scripts auxiliares (seed via API)
+  infrastructure/   → GORM persistence + seed
+pkg/middleware/     → CORS and logger
+scripts/            → helper scripts (seed via API)
 ```
 
-## Executando
+## Running
 
 ```bash
 go run ./cmd/api
 ```
 
-A API sobe na porta `8080` por padrão. Para alterar, defina a variável de ambiente `PORT`.
+The API starts on port `8080` by default. To change it, set the `PORT` environment variable.
+
+```bash
+PORT=9000 go run ./cmd/api
+```
+
+## Tests
+
+```bash
+go test ./...
+```
 
 ---
 
@@ -42,11 +52,11 @@ Base URL: `http://localhost:8080/api/v1`
 
 ---
 
-### Ações
+### Stocks
 
 #### `POST /stocks`
 
-Cria uma nova ação.
+Creates a new stock.
 
 **Body**
 ```json
@@ -61,7 +71,17 @@ Cria uma nova ação.
 }
 ```
 
-**Resposta** `201 Created`
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `ticker` | string | Yes | Stock ticker symbol |
+| `name` | string | Yes | Company name |
+| `sector` | string | No | Market sector |
+| `score` | float | No | Quality score (0–10) |
+| `current_price` | float | Yes | Current price (> 0) |
+| `daily_change` | float | No | Daily price change (%) |
+| `dy` | float | No | Dividend yield (%) |
+
+**Response** `201 Created`
 ```json
 {
   "id": 1,
@@ -81,50 +101,50 @@ Cria uma nova ação.
 
 #### `GET /stocks`
 
-Lista todas as ações com filtros opcionais.
+Lists all stocks with optional filters.
 
 **Query params**
 
-| Param | Tipo | Descrição |
+| Param | Type | Description |
 |---|---|---|
-| `sector` | string | Filtra por setor (ex: `Bancário`) |
-| `sort` | string | Ordena por `score`, `daily_change` ou `dy` |
+| `sector` | string | Filter by sector (e.g. `Bancário`) |
+| `sort` | string | Sort by `score`, `daily_change` or `dy` (descending) |
 
-**Resposta** `200 OK` — array de ações.
+**Response** `200 OK` — array of stocks.
 
 ---
 
 #### `GET /stocks/:id`
 
-Retorna uma ação pelo ID.
+Returns a single stock by ID.
 
-**Resposta** `200 OK` — objeto da ação.
+**Response** `200 OK` — stock object.
 
 ---
 
 #### `PUT /stocks/:id`
 
-Atualiza uma ação existente.
+Updates an existing stock.
 
-**Body** — mesmos campos do `POST /stocks` (`ticker`, `name`, `sector`, `score`, `current_price`, `daily_change`, `dy`).
+**Body** — same fields as `POST /stocks` (`ticker`, `name`, `sector`, `score`, `current_price`, `daily_change`, `dy`).
 
-**Resposta** `200 OK` — objeto atualizado.
+**Response** `200 OK` — updated stock object.
 
 ---
 
 #### `DELETE /stocks/:id`
 
-Remove uma ação.
+Removes a stock.
 
-**Resposta** `204 No Content`
+**Response** `204 No Content`
 
 ---
 
-### Dividendos
+### Dividends
 
 #### `POST /stocks/:id/dividends`
 
-Registra um dividendo para a ação.
+Records a dividend payment for a stock.
 
 **Body**
 ```json
@@ -138,16 +158,16 @@ Registra um dividendo para a ação.
 }
 ```
 
-| Campo | Tipo | Obrigatório | Descrição |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `amount` | float | Sim | Valor por ação (> 0) |
-| `month` | int | Sim | Mês do pagamento (1–12) |
-| `year` | int | Sim | Ano do pagamento (≥ 2000) |
-| `type` | string | Sim | `dividendo`, `jcp` ou `rendimento` |
-| `ex_date` | string | Não | Data ex-dividendo (`YYYY-MM-DD`) |
-| `pay_date` | string | Não | Data de pagamento (`YYYY-MM-DD`) |
+| `amount` | float | Yes | Amount per share (> 0) |
+| `month` | int | Yes | Payment month (1–12) |
+| `year` | int | Yes | Payment year (≥ 2000) |
+| `type` | string | Yes | `dividendo`, `jcp` or `rendimento` |
+| `ex_date` | string | No | Ex-dividend date (`YYYY-MM-DD`) |
+| `pay_date` | string | No | Payment date (`YYYY-MM-DD`) |
 
-**Resposta** `201 Created`
+**Response** `201 Created`
 ```json
 {
   "id": 42,
@@ -165,29 +185,29 @@ Registra um dividendo para a ação.
 
 #### `GET /stocks/:id/dividends`
 
-Lista todos os dividendos de uma ação.
+Lists all dividends for a stock.
 
 **Query params**
 
-| Param | Tipo | Descrição |
+| Param | Type | Description |
 |---|---|---|
-| `year` | int | Filtra por ano (ex: `2023`) |
+| `year` | int | Filter by year (e.g. `2023`) |
 
-**Resposta** `200 OK` — array de dividendos.
+**Response** `200 OK` — array of dividends.
 
 ---
 
 #### `GET /dividends/monthly?year=YYYY`
 
-Retorna um resumo mensal agregado de todos os dividendos de um ano.
+Returns a monthly aggregated summary of all dividends for a given year.
 
 **Query params**
 
-| Param | Tipo | Descrição |
+| Param | Type | Description |
 |---|---|---|
-| `year` | int | Ano consultado (padrão: ano atual) |
+| `year` | int | Year to query (defaults to current year) |
 
-**Resposta** `200 OK`
+**Response** `200 OK`
 ```json
 [
   {
@@ -203,11 +223,11 @@ Retorna um resumo mensal agregado de todos os dividendos de um ano.
 
 ---
 
-## Dados de seed
+## Seed Data
 
-Ao iniciar com banco vazio, a API popula automaticamente **10 ações** e seus dividendos históricos de **2021 a 2025**:
+On first startup with an empty database, the API automatically seeds **10 stocks** and their historical dividends from **2021 to 2025**:
 
-| Ticker | Nome | Setor |
+| Ticker | Name | Sector |
 |---|---|---|
 | BBAS3 | Banco do Brasil | Bancário |
 | BBSE3 | BB Seguridade | Seguros |
@@ -220,9 +240,9 @@ Ao iniciar com banco vazio, a API popula automaticamente **10 ações** e seus d
 | ISAE4 | Isa Cteep | Energia Elétrica |
 | CXSE3 | Caixa Seguridade | Seguros |
 
-Os valores de dividendo por ano foram derivados do histórico real de cada ação (fonte: [Investidor10](https://investidor10.com.br)).
+Dividend amounts per year are derived from real historical data (source: [Investidor10](https://investidor10.com.br)).
 
-Para popular um banco já existente via API, use o script:
+To seed an already-running instance via the API, use the script:
 
 ```bash
 ./scripts/seed_dividends_2021_2024.sh http://localhost:8080
@@ -230,15 +250,15 @@ Para popular um banco já existente via API, use o script:
 
 ---
 
-## Erros
+## Error Responses
 
-| HTTP | Situação |
+| HTTP | Situation |
 |---|---|
-| `400` | Body inválido ou parâmetro fora do range |
-| `404` | Ação não encontrada |
-| `409` | Ticker duplicado |
-| `500` | Erro interno |
+| `400` | Invalid body or parameter out of range |
+| `404` | Stock not found |
+| `409` | Duplicate ticker |
+| `500` | Internal server error |
 
 ```json
-{ "error": "mensagem descritiva" }
+{ "error": "descriptive message" }
 ```
