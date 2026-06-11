@@ -27,7 +27,11 @@ func main() {
 	dividendService := application.NewDividendService(dividendRepo, stockRepo)
 	dividendHandler := handler.NewDividendHandler(dividendService)
 
-	r := router.SetupRouter(stockHandler, dividendHandler)
+	transactionRepo := persistence.NewGormTransactionRepository(db)
+	transactionService := application.NewTransactionService(transactionRepo)
+	transactionHandler := handler.NewTransactionHandler(transactionService)
+
+	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

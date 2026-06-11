@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler) *gin.Engine {
+func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
@@ -27,6 +27,13 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		}
 
 		v1.GET("/dividends/monthly", dividendHandler.GetMonthlySummary)
+
+		transactions := v1.Group("/transactions")
+		{
+			transactions.POST("", transactionHandler.CreateTransaction)
+			transactions.GET("", transactionHandler.ListTransactions)
+			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)
+		}
 	}
 
 	return r

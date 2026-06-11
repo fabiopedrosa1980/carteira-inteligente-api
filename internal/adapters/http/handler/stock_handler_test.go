@@ -30,7 +30,10 @@ func setupRouter(t *testing.T) *gin.Engine {
 	dividendRepo := persistence.NewGormDividendRepository(db)
 	divSvc := application.NewDividendService(dividendRepo, stockRepo)
 	divH := handler.NewDividendHandler(divSvc)
-	return router.SetupRouter(h, divH)
+	transactionRepo := persistence.NewGormTransactionRepository(db)
+	txSvc := application.NewTransactionService(transactionRepo)
+	txH := handler.NewTransactionHandler(txSvc)
+	return router.SetupRouter(h, divH, txH)
 }
 
 func toJSON(t *testing.T, v any) *bytes.Buffer {
