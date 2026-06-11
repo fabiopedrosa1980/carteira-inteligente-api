@@ -29,6 +29,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		v1.GET("/dividends/monthly", dividendHandler.GetMonthlySummary)
 
 		transactions := v1.Group("/transactions")
+		transactions.Use(middleware.AuthRequired())
 		{
 			transactions.POST("", transactionHandler.CreateTransaction)
 			transactions.GET("", transactionHandler.ListTransactions)

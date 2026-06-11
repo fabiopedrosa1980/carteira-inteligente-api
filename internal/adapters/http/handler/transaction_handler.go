@@ -21,6 +21,8 @@ func NewTransactionHandler(service application.TransactionUseCase) *TransactionH
 }
 
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
+	userID := c.GetString("userID")
+
 	var req dto.CreateTransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -34,6 +36,7 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	}
 
 	t := &domain.Transaction{
+		UserID:    userID,
 		Ticker:    req.Ticker,
 		AssetType: req.AssetType,
 		Quantity:  req.Quantity,
@@ -50,8 +53,9 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 }
 
 func (h *TransactionHandler) ListTransactions(c *gin.Context) {
+	userID := c.GetString("userID")
 	ticker := c.Query("ticker")
-	list, err := h.service.List(ticker)
+	list, err := h.service.List(userID, ticker)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
@@ -60,13 +64,15 @@ func (h *TransactionHandler) ListTransactions(c *gin.Context) {
 }
 
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
+	userID := c.GetString("userID")
+
 	id, err := parseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 
-	if err := h.service.Delete(id); err != nil {
+	if err := h.service.Delete(userID, id); err != nil {
 		if errors.Is(err, domain.ErrTransactionNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
 			return

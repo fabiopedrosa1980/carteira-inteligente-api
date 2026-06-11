@@ -17,6 +17,7 @@ const (
 
 type Transaction struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID    string    `gorm:"not null;index"           json:"user_id"`
 	Ticker    string    `gorm:"not null;index"           json:"ticker"`
 	AssetType AssetType `gorm:"not null"                 json:"asset_type"`
 	Quantity  float64   `gorm:"not null"                 json:"quantity"`

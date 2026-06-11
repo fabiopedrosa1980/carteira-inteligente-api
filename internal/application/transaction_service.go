@@ -4,9 +4,9 @@ import "carteira-inteligente-api/internal/domain"
 
 type TransactionUseCase interface {
 	Create(t *domain.Transaction) error
-	List(ticker string) ([]*domain.Transaction, error)
-	GetByID(id uint) (*domain.Transaction, error)
-	Delete(id uint) error
+	List(userID, ticker string) ([]*domain.Transaction, error)
+	GetByID(userID string, id uint) (*domain.Transaction, error)
+	Delete(userID string, id uint) error
 }
 
 type TransactionService struct {
@@ -21,17 +21,17 @@ func (s *TransactionService) Create(t *domain.Transaction) error {
 	return s.repo.Create(t)
 }
 
-func (s *TransactionService) List(ticker string) ([]*domain.Transaction, error) {
-	return s.repo.List(ticker)
+func (s *TransactionService) List(userID, ticker string) ([]*domain.Transaction, error) {
+	return s.repo.List(userID, ticker)
 }
 
-func (s *TransactionService) GetByID(id uint) (*domain.Transaction, error) {
-	return s.repo.GetByID(id)
+func (s *TransactionService) GetByID(userID string, id uint) (*domain.Transaction, error) {
+	return s.repo.GetByID(userID, id)
 }
 
-func (s *TransactionService) Delete(id uint) error {
-	if _, err := s.repo.GetByID(id); err != nil {
+func (s *TransactionService) Delete(userID string, id uint) error {
+	if _, err := s.repo.GetByID(userID, id); err != nil {
 		return domain.ErrTransactionNotFound
 	}
-	return s.repo.Delete(id)
+	return s.repo.Delete(userID, id)
 }
