@@ -25,3 +25,10 @@ type Transaction struct {
 	Date      time.Time `gorm:"not null"                 json:"date"`
 	CreatedAt time.Time                                  `json:"created_at"`
 }
+
+type PortfolioItem struct {
+	Ticker        string    `json:"ticker"`
+	AssetType     AssetType `json:"asset_type"`
+	TotalQuantity float64   `json:"total_quantity"`
+	AvgPrice      float64   `json:"avg_price"`
+}

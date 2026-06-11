@@ -42,3 +42,27 @@ func TransactionListFromDomain(list []*domain.Transaction) []TransactionResponse
 	}
 	return out
 }
+
+type PortfolioItemResponse struct {
+	Ticker        string           `json:"ticker"`
+	AssetType     domain.AssetType `json:"asset_type"`
+	TotalQuantity float64          `json:"total_quantity"`
+	AvgPrice      float64          `json:"avg_price"`
+}
+
+func PortfolioItemFromDomain(p *domain.PortfolioItem) PortfolioItemResponse {
+	return PortfolioItemResponse{
+		Ticker:        p.Ticker,
+		AssetType:     p.AssetType,
+		TotalQuantity: p.TotalQuantity,
+		AvgPrice:      p.AvgPrice,
+	}
+}
+
+func PortfolioListFromDomain(list []*domain.PortfolioItem) []PortfolioItemResponse {
+	out := make([]PortfolioItemResponse, len(list))
+	for i, p := range list {
+		out[i] = PortfolioItemFromDomain(p)
+	}
+	return out
+}

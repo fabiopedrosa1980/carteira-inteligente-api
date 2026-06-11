@@ -63,6 +63,16 @@ func (h *TransactionHandler) ListTransactions(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.TransactionListFromDomain(list))
 }
 
+func (h *TransactionHandler) GetPortfolio(c *gin.Context) {
+	userID := c.GetString("userID")
+	items, err := h.service.GetPortfolio(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+	c.JSON(http.StatusOK, dto.PortfolioListFromDomain(items))
+}
+
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	userID := c.GetString("userID")
 
