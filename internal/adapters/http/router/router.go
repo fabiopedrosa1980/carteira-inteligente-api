@@ -31,7 +31,6 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		transactions := v1.Group("/transactions")
 		transactions.Use(middleware.AuthRequired())
 		{
-			transactions.GET("/portfolio", transactionHandler.GetPortfolio)
 			transactions.POST("", transactionHandler.CreateTransaction)
 			transactions.GET("", transactionHandler.ListTransactions)
 			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)

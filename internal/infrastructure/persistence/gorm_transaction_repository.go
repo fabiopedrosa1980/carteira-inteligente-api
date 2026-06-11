@@ -38,33 +38,3 @@ func (r *GormTransactionRepository) GetByID(userID string, id uint) (*domain.Tra
 func (r *GormTransactionRepository) Delete(userID string, id uint) error {
 	return r.db.Where("user_id = ?", userID).Delete(&domain.Transaction{}, id).Error
 }
-
-func (r *GormTransactionRepository) GetPortfolio(userID string) ([]*domain.PortfolioItem, error) {
-	type row struct {
-		Ticker        string
-		AssetType     string
-		TotalQuantity float64
-		AvgPrice      float64
-	}
-	var rows []row
-	err := r.db.Model(&domain.Transaction{}).
-		Select("ticker, asset_type, SUM(quantity) as total_quantity, SUM(quantity*price)/SUM(quantity) as avg_price").
-		Where("user_id = ?", userID).
-		Group("ticker, asset_type").
-		Having("SUM(quantity) > 1").
-		Order("ticker").
-		Scan(&rows).Error
-	if err != nil {
-		return nil, err
-	}
-	items := make([]*domain.PortfolioItem, len(rows))
-	for i, r := range rows {
-		items[i] = &domain.PortfolioItem{
-			Ticker:        r.Ticker,
-			AssetType:     domain.AssetType(r.AssetType),
-			TotalQuantity: r.TotalQuantity,
-			AvgPrice:      r.AvgPrice,
-		}
-	}
-	return items, nil
-}

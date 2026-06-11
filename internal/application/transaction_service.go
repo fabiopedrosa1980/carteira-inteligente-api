@@ -7,7 +7,6 @@ type TransactionUseCase interface {
 	List(userID, ticker string) ([]*domain.Transaction, error)
 	GetByID(userID string, id uint) (*domain.Transaction, error)
 	Delete(userID string, id uint) error
-	GetPortfolio(userID string) ([]*domain.PortfolioItem, error)
 }
 
 type TransactionService struct {
@@ -35,8 +34,4 @@ func (s *TransactionService) Delete(userID string, id uint) error {
 		return domain.ErrTransactionNotFound
 	}
 	return s.repo.Delete(userID, id)
-}
-
-func (s *TransactionService) GetPortfolio(userID string) ([]*domain.PortfolioItem, error) {
-	return s.repo.GetPortfolio(userID)
 }
