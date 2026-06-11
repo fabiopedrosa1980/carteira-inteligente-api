@@ -25,3 +25,18 @@ type Transaction struct {
 	Date      time.Time `gorm:"not null"                 json:"date"`
 	CreatedAt time.Time                                  `json:"created_at"`
 }
+
+type AcoesPosition struct {
+	Ticker        string
+	TotalQuantity float64
+	AvgPrice      float64
+}
+
+type AcaoItem struct {
+	Ticker        string  `json:"ticker"`
+	Name          string  `json:"name"`
+	TotalQuantity float64 `json:"total_quantity"`
+	AvgPrice      float64 `json:"avg_price"`
+	CurrentPrice  float64 `json:"current_price"`
+	ChangePercent float64 `json:"change_percent"`
+}
