@@ -102,7 +102,7 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 		wg.Add(1)
 		go func(idx int, p *domain.AcoesPosition) {
 			defer wg.Done()
-			price, changePercent, name := fetchYahooQuote(p.Ticker)
+			price, changePercent, dividendYield, name := fetchYahooQuote(p.Ticker)
 			items[idx] = &domain.AcaoItem{
 				Ticker:        p.Ticker,
 				Name:          name,
@@ -110,6 +110,7 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 				AvgPrice:      p.AvgPrice,
 				CurrentPrice:  price,
 				ChangePercent: changePercent,
+				DividendYield: dividendYield,
 			}
 		}(i, pos)
 	}
@@ -118,45 +119,53 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-func fetchYahooQuote(ticker string) (price, changePercent float64, name string) {
+// fetchYahooQuote busca cotação atual, variação do dia e DY anual no Yahoo Finance.
+// Usa o endpoint v7/finance/quote que retorna todos os dados em uma única chamada.
+// changePercent já vem como percentual (ex: 1.54 = +1.54%).
+// trailingAnnualDividendYield vem como decimal (ex: 0.0854) e é convertido para percentual.
+func fetchYahooQuote(ticker string) (price, changePercent, dividendYield float64, name string) {
 	client := &http.Client{Timeout: 6 * time.Second}
-	url := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s.SA", ticker)
+	url := fmt.Sprintf(
+		"https://query2.finance.yahoo.com/v7/finance/quote?symbols=%s.SA&fields=regularMarketPrice,regularMarketChangePercent,trailingAnnualDividendYield,longName,shortName",
+		ticker,
+	)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return 0, 0, ticker
+		return 0, 0, 0, ticker
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; carteira-inteligente/1.0)")
 
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return 0, 0, ticker
+		return 0, 0, 0, ticker
 	}
 	defer resp.Body.Close()
 
-	var yr struct {
-		Chart struct {
+	var qr struct {
+		QuoteResponse struct {
 			Result []struct {
-				Meta struct {
-					RegularMarketPrice        float64 `json:"regularMarketPrice"`
-					RegularMarketChangePercent float64 `json:"regularMarketChangePercent"`
-					LongName                  string  `json:"longName"`
-					ShortName                 string  `json:"shortName"`
-				} `json:"meta"`
+				LongName                    string  `json:"longName"`
+				ShortName                   string  `json:"shortName"`
+				RegularMarketPrice          float64 `json:"regularMarketPrice"`
+				RegularMarketChangePercent  float64 `json:"regularMarketChangePercent"`
+				TrailingAnnualDividendYield float64 `json:"trailingAnnualDividendYield"`
 			} `json:"result"`
-		} `json:"chart"`
+		} `json:"quoteResponse"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&yr); err != nil || len(yr.Chart.Result) == 0 {
-		return 0, 0, ticker
+	if err := json.NewDecoder(resp.Body).Decode(&qr); err != nil || len(qr.QuoteResponse.Result) == 0 {
+		return 0, 0, 0, ticker
 	}
 
-	meta := yr.Chart.Result[0].Meta
-	n := meta.LongName
+	r := qr.QuoteResponse.Result[0]
+	n := r.LongName
 	if n == "" {
-		n = meta.ShortName
+		n = r.ShortName
 	}
 	if n == "" {
 		n = ticker
 	}
-	return meta.RegularMarketPrice, meta.RegularMarketChangePercent, n
+
+	// DY vem como decimal (0.0854 = 8.54%); converte para percentual
+	return r.RegularMarketPrice, r.RegularMarketChangePercent, r.TrailingAnnualDividendYield * 100, n
 }
