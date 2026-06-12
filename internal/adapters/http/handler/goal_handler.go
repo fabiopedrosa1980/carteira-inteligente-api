@@ -36,7 +36,7 @@ func (h *GoalHandler) CreateGoal(c *gin.Context) {
 	}
 	g := &domain.Goal{
 		Name:        req.Name,
-		Description: req.Description,
+
 		TargetValue: req.TargetValue,
 		Type:        req.Type,
 		Ticker:      req.Ticker,
@@ -57,7 +57,7 @@ func (h *GoalHandler) UpdateGoal(c *gin.Context) {
 	}
 	updated, err := h.service.UpdateGoal(id, &domain.Goal{
 		Name:        req.Name,
-		Description: req.Description,
+
 		TargetValue: req.TargetValue,
 		Type:        req.Type,
 		Ticker:      req.Ticker,

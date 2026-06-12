@@ -47,7 +47,7 @@ func (s *GoalService) UpdateGoal(id string, updated *domain.Goal) (*domain.Goal,
 		return nil, domain.ErrNotFound
 	}
 	existing.Name = updated.Name
-	existing.Description = updated.Description
+
 	existing.TargetValue = updated.TargetValue
 	existing.Type = updated.Type
 	existing.Ticker = updated.Ticker

@@ -4,7 +4,6 @@ import "carteira-inteligente-api/internal/domain"
 
 type GoalRequest struct {
 	Name        string  `json:"name"        binding:"required"`
-	Description string  `json:"description"`
 	TargetValue float64 `json:"targetValue"`
 	Type        string  `json:"type"        binding:"required,oneof=patrimonio renda_mensal preco_medio"`
 	Ticker      string  `json:"ticker"`
@@ -13,7 +12,6 @@ type GoalRequest struct {
 type GoalResponse struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
-	Description string  `json:"description"`
 	TargetValue float64 `json:"targetValue"`
 	Type        string  `json:"type"`
 	Ticker      string  `json:"ticker"`
@@ -24,7 +22,6 @@ func GoalFromDomain(g *domain.Goal) GoalResponse {
 	return GoalResponse{
 		ID:          g.ID,
 		Name:        g.Name,
-		Description: g.Description,
 		TargetValue: g.TargetValue,
 		Type:        g.Type,
 		Ticker:      g.Ticker,
