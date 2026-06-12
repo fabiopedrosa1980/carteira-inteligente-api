@@ -31,7 +31,9 @@ func main() {
 	transactionService := application.NewTransactionService(transactionRepo)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 
-	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler)
+	quoteHandler := handler.NewQuoteHandler()
+
+	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
