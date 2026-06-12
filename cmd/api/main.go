@@ -33,7 +33,11 @@ func main() {
 
 	quoteHandler := handler.NewQuoteHandler()
 
-	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler)
+	goalRepo := persistence.NewGormGoalRepository(db)
+	goalService := application.NewGoalService(goalRepo)
+	goalHandler := handler.NewGoalHandler(goalService)
+
+	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

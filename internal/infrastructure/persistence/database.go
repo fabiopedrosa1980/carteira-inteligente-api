@@ -16,7 +16,7 @@ func NewDBWithDSN(dsn string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := db.AutoMigrate(&domain.Stock{}, &domain.Dividend{}, &domain.Transaction{}); err != nil {
+	if err := db.AutoMigrate(&domain.Stock{}, &domain.Dividend{}, &domain.Transaction{}, &domain.Goal{}); err != nil {
 		return nil, err
 	}
 	return db, nil

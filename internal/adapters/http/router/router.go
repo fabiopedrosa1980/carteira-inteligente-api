@@ -7,11 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler) *gin.Engine {
+func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	v1 := r.Group("/api/v1")
 	{
@@ -28,6 +32,14 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 
 		v1.GET("/dividends/monthly", dividendHandler.GetMonthlySummary)
 		v1.GET("/quote/:ticker", quoteHandler.GetQuote)
+
+		goals := v1.Group("/goals")
+		{
+			goals.GET("", goalHandler.ListGoals)
+			goals.POST("", goalHandler.CreateGoal)
+			goals.PUT("/:id", goalHandler.UpdateGoal)
+			goals.DELETE("/:id", goalHandler.DeleteGoal)
+		}
 
 		transactions := v1.Group("/transactions")
 		transactions.Use(middleware.AuthRequired())
