@@ -29,55 +29,6 @@ type QuoteResponse struct {
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
-// fetchBrapi tenta obter cotação via brapi.dev (plano gratuito tem cobertura parcial).
-func fetchBrapi(ticker string) *QuoteResponse {
-	type result struct {
-		ShortName                  string  `json:"shortName"`
-		LongName                   string  `json:"longName"`
-		RegularMarketPrice         float64 `json:"regularMarketPrice"`
-		RegularMarketChangePercent float64 `json:"regularMarketChangePercent"`
-		RegularMarketPreviousClose float64 `json:"regularMarketPreviousClose"`
-	}
-	type response struct {
-		Results []result `json:"results"`
-	}
-
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://brapi.dev/api/quote/%s", ticker), nil)
-	if err != nil {
-		return nil
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "carteira-inteligente-api/1.0")
-
-	resp, err := httpClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return nil
-	}
-	defer resp.Body.Close()
-
-	var br response
-	if err := json.NewDecoder(resp.Body).Decode(&br); err != nil || len(br.Results) == 0 {
-		return nil
-	}
-	r := br.Results[0]
-	if r.RegularMarketPrice == 0 {
-		return nil
-	}
-
-	name := r.LongName
-	if name == "" {
-		name = r.ShortName
-	}
-	return &QuoteResponse{
-		Ticker:        ticker,
-		Name:          name,
-		Price:         r.RegularMarketPrice,
-		ChangePercent: r.RegularMarketChangePercent,
-		PrevClose:     r.RegularMarketPreviousClose,
-		Found:         true,
-	}
-}
-
 // fetchYahoo usa a API do Yahoo Finance com sufixo .SA para tickers da B3.
 func fetchYahoo(ticker string) *QuoteResponse {
 	type chartMeta struct {
@@ -150,11 +101,6 @@ func fetchYahoo(ticker string) *QuoteResponse {
 func (h *QuoteHandler) GetQuote(c *gin.Context) {
 	ticker := strings.ToUpper(c.Param("ticker"))
 
-	// tenta brapi.dev primeiro; se não tiver cobertura, cai no Yahoo Finance
-	if q := fetchBrapi(ticker); q != nil {
-		c.JSON(http.StatusOK, q)
-		return
-	}
 	if q := fetchYahoo(ticker); q != nil {
 		c.JSON(http.StatusOK, q)
 		return
