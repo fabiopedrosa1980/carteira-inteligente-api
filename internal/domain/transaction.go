@@ -39,4 +39,6 @@ type AcaoItem struct {
 	AvgPrice      float64 `json:"avg_price"`
 	CurrentPrice  float64 `json:"current_price"`
 	ChangePercent float64 `json:"change_percent"`
+	DividendYield float64 `json:"dividend_yield"`
+	Nota          float64 `json:"nota"`
 }
