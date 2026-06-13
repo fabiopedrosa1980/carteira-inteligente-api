@@ -17,22 +17,23 @@ func NewGoalService(repo domain.GoalRepository) *GoalService {
 	return &GoalService{repo: repo}
 }
 
-func (s *GoalService) ListGoals() ([]domain.Goal, error) {
-	return s.repo.FindAll()
+func (s *GoalService) ListGoals(userID string) ([]domain.Goal, error) {
+	return s.repo.FindAll(userID)
 }
 
-func (s *GoalService) CreateGoal(g *domain.Goal) error {
+func (s *GoalService) CreateGoal(userID string, g *domain.Goal) error {
 	if strings.TrimSpace(g.Name) == "" {
 		return domain.ErrValidation
 	}
 	g.ID = newUUID()
+	g.UserID = userID
 	g.CreatedAt = time.Now()
 	g.UpdatedAt = time.Now()
 	return s.repo.Create(g)
 }
 
-func (s *GoalService) UpdateGoal(id string, updated *domain.Goal) (*domain.Goal, error) {
-	goals, err := s.repo.FindAll()
+func (s *GoalService) UpdateGoal(userID, id string, updated *domain.Goal) (*domain.Goal, error) {
+	goals, err := s.repo.FindAll(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +48,6 @@ func (s *GoalService) UpdateGoal(id string, updated *domain.Goal) (*domain.Goal,
 		return nil, domain.ErrNotFound
 	}
 	existing.Name = updated.Name
-
 	existing.TargetValue = updated.TargetValue
 	existing.Type = updated.Type
 	existing.Ticker = updated.Ticker

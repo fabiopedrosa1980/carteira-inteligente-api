@@ -120,12 +120,13 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 
 func fetchYahooQuote(ticker string) (price, changePercent float64, name string) {
 	client := &http.Client{Timeout: 6 * time.Second}
-	url := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s.SA", ticker)
+	url := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s.SA?interval=1d&range=1d", ticker)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return 0, 0, ticker
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; carteira-inteligente/1.0)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+	req.Header.Set("Accept", "*/*")
 
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -137,10 +138,10 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string) 
 		Chart struct {
 			Result []struct {
 				Meta struct {
-					RegularMarketPrice        float64 `json:"regularMarketPrice"`
-					RegularMarketChangePercent float64 `json:"regularMarketChangePercent"`
-					LongName                  string  `json:"longName"`
-					ShortName                 string  `json:"shortName"`
+					RegularMarketPrice float64 `json:"regularMarketPrice"`
+					ChartPreviousClose float64 `json:"chartPreviousClose"`
+					LongName           string  `json:"longName"`
+					ShortName          string  `json:"shortName"`
 				} `json:"meta"`
 			} `json:"result"`
 		} `json:"chart"`
@@ -158,5 +159,11 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string) 
 	if n == "" {
 		n = ticker
 	}
-	return meta.RegularMarketPrice, meta.RegularMarketChangePercent, n
+
+	prev := meta.ChartPreviousClose
+	cp := 0.0
+	if prev > 0 {
+		cp = (meta.RegularMarketPrice - prev) / prev * 100
+	}
+	return meta.RegularMarketPrice, cp, n
 }

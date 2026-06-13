@@ -34,6 +34,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		v1.GET("/quote/:ticker", quoteHandler.GetQuote)
 
 		goals := v1.Group("/goals")
+		goals.Use(middleware.AuthRequired())
 		{
 			goals.GET("", goalHandler.ListGoals)
 			goals.POST("", goalHandler.CreateGoal)

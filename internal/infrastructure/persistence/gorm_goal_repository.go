@@ -18,9 +18,9 @@ func (r *GormGoalRepository) Create(goal *domain.Goal) error {
 	return r.db.Create(goal).Error
 }
 
-func (r *GormGoalRepository) FindAll() ([]domain.Goal, error) {
+func (r *GormGoalRepository) FindAll(userID string) ([]domain.Goal, error) {
 	var goals []domain.Goal
-	if err := r.db.Order("created_at asc").Find(&goals).Error; err != nil {
+	if err := r.db.Where("user_id = ?", userID).Order("created_at asc").Find(&goals).Error; err != nil {
 		return nil, err
 	}
 	return goals, nil

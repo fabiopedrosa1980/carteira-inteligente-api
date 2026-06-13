@@ -35,7 +35,7 @@ func main() {
 
 	goalRepo := persistence.NewGormGoalRepository(db)
 	goalService := application.NewGoalService(goalRepo)
-	goalHandler := handler.NewGoalHandler(goalService)
+	goalHandler := handler.NewGoalHandler(goalService, transactionService, stockRepo)
 
 	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler)
 

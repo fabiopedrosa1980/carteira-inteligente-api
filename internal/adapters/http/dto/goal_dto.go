@@ -10,29 +10,25 @@ type GoalRequest struct {
 }
 
 type GoalResponse struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	TargetValue float64 `json:"targetValue"`
-	Type        string  `json:"type"`
-	Ticker      string  `json:"ticker"`
-	CreatedAt   string  `json:"createdAt"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	TargetValue     float64 `json:"targetValue"`
+	Type            string  `json:"type"`
+	Ticker          string  `json:"ticker"`
+	CreatedAt       string  `json:"createdAt"`
+	CurrentValue    float64 `json:"currentValue"`
+	ProgressPercent float64 `json:"progressPercent"`
 }
 
-func GoalFromDomain(g *domain.Goal) GoalResponse {
+func GoalFromDomain(g *domain.Goal, currentValue, progressPercent float64) GoalResponse {
 	return GoalResponse{
-		ID:          g.ID,
-		Name:        g.Name,
-		TargetValue: g.TargetValue,
-		Type:        g.Type,
-		Ticker:      g.Ticker,
-		CreatedAt:   g.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:              g.ID,
+		Name:            g.Name,
+		TargetValue:     g.TargetValue,
+		Type:            g.Type,
+		Ticker:          g.Ticker,
+		CreatedAt:       g.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CurrentValue:    currentValue,
+		ProgressPercent: progressPercent,
 	}
-}
-
-func GoalListFromDomain(goals []domain.Goal) []GoalResponse {
-	out := make([]GoalResponse, len(goals))
-	for i := range goals {
-		out[i] = GoalFromDomain(&goals[i])
-	}
-	return out
 }
