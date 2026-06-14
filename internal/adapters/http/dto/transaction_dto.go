@@ -6,21 +6,28 @@ import (
 )
 
 type CreateTransactionRequest struct {
-	Ticker    string            `json:"ticker"     binding:"required"`
-	AssetType domain.AssetType  `json:"asset_type" binding:"required"`
-	Quantity  float64           `json:"quantity"   binding:"required,gt=0"`
-	Price     float64           `json:"price"      binding:"required,gt=0"`
-	Date      string            `json:"date"       binding:"required"`
+	Ticker    string           `json:"ticker"     binding:"required"`
+	AssetType domain.AssetType `json:"asset_type" binding:"required"`
+	Quantity  float64          `json:"quantity"   binding:"required,gt=0"`
+	Price     float64          `json:"price"      binding:"required,gt=0"`
+	Date      string           `json:"date"       binding:"required"`
+}
+
+type UpdateTransactionRequest struct {
+	AssetType domain.AssetType `json:"asset_type" binding:"required"`
+	Quantity  float64          `json:"quantity"   binding:"required,gt=0"`
+	Price     float64          `json:"price"      binding:"required,gt=0"`
+	Date      string           `json:"date"       binding:"required"`
 }
 
 type TransactionResponse struct {
-	ID        uint              `json:"id"`
-	Ticker    string            `json:"ticker"`
-	AssetType domain.AssetType  `json:"asset_type"`
-	Quantity  float64           `json:"quantity"`
-	Price     float64           `json:"price"`
-	Date      time.Time         `json:"date"`
-	CreatedAt time.Time         `json:"created_at"`
+	ID        uint             `json:"id"`
+	Ticker    string           `json:"ticker"`
+	AssetType domain.AssetType `json:"asset_type"`
+	Quantity  float64          `json:"quantity"`
+	Price     float64          `json:"price"`
+	Date      time.Time        `json:"date"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 func TransactionFromDomain(t *domain.Transaction) TransactionResponse {

@@ -18,6 +18,17 @@ func (r *GormTransactionRepository) Create(t *domain.Transaction) error {
 	return r.db.Create(t).Error
 }
 
+func (r *GormTransactionRepository) Update(t *domain.Transaction) error {
+	return r.db.Model(&domain.Transaction{}).
+		Where("user_id = ? AND id = ?", t.UserID, t.ID).
+		Updates(map[string]interface{}{
+			"asset_type": t.AssetType,
+			"quantity":   t.Quantity,
+			"price":      t.Price,
+			"date":       t.Date,
+		}).Error
+}
+
 func (r *GormTransactionRepository) List(userID, ticker string) ([]*domain.Transaction, error) {
 	var transactions []*domain.Transaction
 	q := r.db.Where("user_id = ?", userID).Order("date desc")
