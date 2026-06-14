@@ -1,3 +1,5 @@
+// Deploy: 2026-06-14 — força redeploy no Render (chave de unicidade de
+// dividendos e robustez do scraper investidor10).
 package main
 
 import (
