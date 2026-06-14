@@ -278,6 +278,11 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 					LongName           string  `json:"longName"`
 					ShortName          string  `json:"shortName"`
 				} `json:"meta"`
+				Indicators struct {
+					Quote []struct {
+						Close []float64 `json:"close"`
+					} `json:"quote"`
+				} `json:"indicators"`
 				Events struct {
 					Dividends map[string]struct {
 						Amount float64 `json:"amount"`
@@ -302,7 +307,19 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 		n = ticker
 	}
 
-	prev := meta.ChartPreviousClose
+	// Variação do dia: usar o fechamento do pregão anterior. Como a requisição
+	// usa range=1y (para somar dividendos), meta.ChartPreviousClose se refere ao
+	// fechamento de ~1 ano atrás, e não a ontem — produzia variação errada.
+	// Em vez disso, derivamos o fechamento anterior dos dois últimos closes
+	// válidos da série diária, alinhando com Investidor10/Finance.
+	var closes []float64
+	if len(result.Indicators.Quote) > 0 {
+		closes = result.Indicators.Quote[0].Close
+	}
+	prev := previousDailyClose(closes, meta.RegularMarketPrice)
+	if prev == 0 {
+		prev = meta.ChartPreviousClose
+	}
 	cp := 0.0
 	if prev > 0 {
 		cp = (meta.RegularMarketPrice - prev) / prev * 100
@@ -318,4 +335,29 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 	}
 
 	return meta.RegularMarketPrice, cp, n, dy
+}
+
+// previousDailyClose deriva o fechamento do pregão anterior a partir da série
+// diária de closes (ignorando valores nulos/zero). Quando a última vela
+// representa o pregão corrente (close ≈ preço atual), o fechamento anterior é o
+// penúltimo close; caso contrário, é o próprio último close. Retorna 0 quando
+// não há dados suficientes, deixando o chamador usar um fallback.
+func previousDailyClose(closes []float64, current float64) float64 {
+	valid := make([]float64, 0, len(closes))
+	for _, c := range closes {
+		if c > 0 {
+			valid = append(valid, c)
+		}
+	}
+	if len(valid) == 0 {
+		return 0
+	}
+	last := valid[len(valid)-1]
+	if current > 0 && math.Abs(last-current) < 0.01 {
+		if len(valid) >= 2 {
+			return valid[len(valid)-2]
+		}
+		return 0
+	}
+	return last
 }

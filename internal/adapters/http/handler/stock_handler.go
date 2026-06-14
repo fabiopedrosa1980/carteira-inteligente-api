@@ -67,7 +67,10 @@ func (h *StockHandler) importDividends(stockID uint, ticker string) {
 // o ticker e persiste cada registro, marcando o stock como history_ready ao
 // final. Reutilizado pelo cadastro de stock e pela criação de transações.
 func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string) {
-	since := time.Now().AddDate(-5, 0, 0)
+	// Janela de 5 anos-calendário: do dia 1º de janeiro de (ano atual - 4) em
+	// diante. Usar AddDate(-5,...) abrangia 6 anos-calendário (o ano de 5 anos
+	// atrás entrava parcialmente), divergindo dos filtros de 5 anos da UI.
+	since := time.Date(time.Now().Year()-4, time.January, 1, 0, 0, 0, 0, time.UTC)
 	dividends, err := scraper.FetchDividends(ticker, since)
 	if err != nil {
 		log.Printf("[scraper] %s: %v", ticker, err)
