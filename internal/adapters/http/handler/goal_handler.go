@@ -59,7 +59,8 @@ func (h *GoalHandler) buildGoalResponses(userID string, goals []domain.Goal) []d
 	}
 	wg.Wait()
 
-	// Total patrimônio = sum(qty * currentPrice).
+	// Total patrimônio = sum(qty * currentPrice). Toda meta acompanha o
+	// patrimônio total da carteira.
 	patrimonio := 0.0
 	for _, pos := range positions {
 		price := pos.AvgPrice
@@ -69,40 +70,9 @@ func (h *GoalHandler) buildGoalResponses(userID string, goals []domain.Goal) []d
 		patrimonio += pos.TotalQuantity * price
 	}
 
-	// DY from stocks table (stored as percentage, e.g. 8.5 for 8.5%).
-	stocks, _ := h.stockRepo.FindAll(domain.StockQuery{})
-	dyMap := make(map[string]float64)
-	for _, s := range stocks {
-		dyMap[s.Ticker] = s.DY / 100
-	}
-
-	// Estimated monthly income = sum(qty * price * dy / 12).
-	rendaMensal := 0.0
-	for _, pos := range positions {
-		price := pos.AvgPrice
-		if p, ok := priceMap[pos.Ticker]; ok {
-			price = p
-		}
-		rendaMensal += pos.TotalQuantity * price * dyMap[pos.Ticker] / 12
-	}
-
-	// Average purchase price per ticker.
-	avgMap := make(map[string]float64)
-	for _, pos := range positions {
-		avgMap[pos.Ticker] = pos.AvgPrice
-	}
-
 	out := make([]dto.GoalResponse, len(goals))
 	for i, g := range goals {
-		var currentValue float64
-		switch g.Type {
-		case "patrimonio":
-			currentValue = patrimonio
-		case "renda_mensal":
-			currentValue = rendaMensal
-		case "preco_medio":
-			currentValue = avgMap[g.Ticker]
-		}
+		currentValue := patrimonio
 
 		progressPercent := 0.0
 		if g.TargetValue > 0 {
@@ -127,8 +97,6 @@ func (h *GoalHandler) CreateGoal(c *gin.Context) {
 	g := &domain.Goal{
 		Name:        req.Name,
 		TargetValue: req.TargetValue,
-		Type:        req.Type,
-		Ticker:      req.Ticker,
 	}
 	if err := h.service.CreateGoal(userID, g); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
@@ -148,8 +116,6 @@ func (h *GoalHandler) UpdateGoal(c *gin.Context) {
 	updated, err := h.service.UpdateGoal(userID, id, &domain.Goal{
 		Name:        req.Name,
 		TargetValue: req.TargetValue,
-		Type:        req.Type,
-		Ticker:      req.Ticker,
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {

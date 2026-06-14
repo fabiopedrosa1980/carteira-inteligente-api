@@ -24,5 +24,10 @@ func NewDBWithDSN(dsn string) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&domain.Stock{}, &domain.Dividend{}, &domain.Transaction{}, &domain.Goal{}); err != nil {
 		return nil, err
 	}
+	// Remove colunas legadas de metas (type/ticker). A coluna `type` era
+	// NOT NULL e quebraria inserts de novas metas sem tipo. Best-effort:
+	// erros (coluna inexistente em banco novo) são ignorados.
+	db.Exec("ALTER TABLE goals DROP COLUMN type")
+	db.Exec("ALTER TABLE goals DROP COLUMN ticker")
 	return db, nil
 }

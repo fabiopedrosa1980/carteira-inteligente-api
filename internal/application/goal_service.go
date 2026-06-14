@@ -49,8 +49,6 @@ func (s *GoalService) UpdateGoal(userID, id string, updated *domain.Goal) (*doma
 	}
 	existing.Name = updated.Name
 	existing.TargetValue = updated.TargetValue
-	existing.Type = updated.Type
-	existing.Ticker = updated.Ticker
 	existing.UpdatedAt = time.Now()
 	if err := s.repo.Update(existing); err != nil {
 		return nil, err

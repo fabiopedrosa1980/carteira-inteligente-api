@@ -7,8 +7,6 @@ type Goal struct {
 	UserID      string    `gorm:"not null;index"   json:"-"`
 	Name        string    `gorm:"not null"         json:"name"`
 	TargetValue float64   `json:"targetValue"`
-	Type        string    `gorm:"not null"         json:"type"` // patrimonio | renda_mensal | preco_medio
-	Ticker      string    `json:"ticker"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
