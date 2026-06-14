@@ -66,26 +66,31 @@ func FetchDividends(ticker string, since time.Time) ([]ScrapedDividend, error) {
 }
 
 // extractDividendRows finds all <tr> rows inside the dividend history table.
-// The table is identified by its header row containing "tipo", "data com",
-// "pagamento" and "valor" columns.
+// The table is located first by its id "table-dividends-history" (the markup
+// rendered server-side by Investidor10) and, as a fallback, by a header row
+// containing "tipo", "data" and "valor" columns.
 func extractDividendRows(doc *html.Node) [][]string {
-	var dividendTable *html.Node
-	var findTable func(*html.Node)
-	findTable = func(n *html.Node) {
-		if dividendTable != nil {
-			return
-		}
-		if n.Type == html.ElementNode && n.Data == "table" {
-			if tableHasDividendHeaders(n) {
-				dividendTable = n
+	dividendTable := findTableByID(doc, "table-dividends-history")
+
+	if dividendTable == nil {
+		// Fallback: locate by header content.
+		var findTable func(*html.Node)
+		findTable = func(n *html.Node) {
+			if dividendTable != nil {
 				return
 			}
+			if n.Type == html.ElementNode && n.Data == "table" {
+				if tableHasDividendHeaders(n) {
+					dividendTable = n
+					return
+				}
+			}
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				findTable(c)
+			}
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findTable(c)
-		}
+		findTable(doc)
 	}
-	findTable(doc)
 
 	if dividendTable == nil {
 		log.Println("[investidor10] dividend table not found in HTML")
@@ -113,6 +118,24 @@ func extractDividendRows(doc *html.Node) [][]string {
 		rows = rows[1:]
 	}
 	return rows
+}
+
+// findTableByID returns the first <table> element whose id attribute equals id,
+// or nil if none is found.
+func findTableByID(n *html.Node, id string) *html.Node {
+	if n.Type == html.ElementNode && n.Data == "table" {
+		for _, a := range n.Attr {
+			if a.Key == "id" && a.Val == id {
+				return n
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if found := findTableByID(c, id); found != nil {
+			return found
+		}
+	}
+	return nil
 }
 
 // tableHasDividendHeaders returns true if the table's first row contains

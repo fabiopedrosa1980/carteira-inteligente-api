@@ -85,7 +85,18 @@ func TestListDividends_200(t *testing.T) {
 	id := createStock(t, r, "VALE3", 65.0)
 
 	for _, month := range []int{1, 4, 7} {
-		body := toJSON(t, map[string]any{"amount": 0.30, "month": month, "year": 2024, "type": "dividendo"})
+		mm := strconv.Itoa(month)
+		if month < 10 {
+			mm = "0" + mm
+		}
+		body := toJSON(t, map[string]any{
+			"amount":   0.30,
+			"month":    month,
+			"year":     2024,
+			"type":     "dividendo",
+			"ex_date":  "2024-" + mm + "-10",
+			"pay_date": "2024-" + mm + "-15",
+		})
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks/"+strconv.Itoa(id)+"/dividends", body)
 		req.Header.Set("Content-Type", "application/json")
 		r.ServeHTTP(httptest.NewRecorder(), req)
@@ -110,7 +121,15 @@ func TestListDividends_FilterByYear(t *testing.T) {
 	id := createStock(t, r, "CMIG4", 11.95)
 
 	for _, year := range []int{2023, 2024} {
-		body := toJSON(t, map[string]any{"amount": 0.22, "month": 6, "year": year, "type": "dividendo"})
+		yy := strconv.Itoa(year)
+		body := toJSON(t, map[string]any{
+			"amount":   0.22,
+			"month":    6,
+			"year":     year,
+			"type":     "dividendo",
+			"ex_date":  yy + "-06-10",
+			"pay_date": yy + "-06-15",
+		})
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/stocks/"+strconv.Itoa(id)+"/dividends", body)
 		req.Header.Set("Content-Type", "application/json")
 		r.ServeHTTP(httptest.NewRecorder(), req)
