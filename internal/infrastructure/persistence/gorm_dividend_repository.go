@@ -25,13 +25,13 @@ func (r *GormDividendRepository) CreateIfNotExists(d *domain.Dividend) error {
 
 func (r *GormDividendRepository) FindByStockID(stockID uint) ([]domain.Dividend, error) {
 	var dividends []domain.Dividend
-	err := r.db.Where("stock_id = ?", stockID).Order("year, month").Find(&dividends).Error
+	err := r.db.Where("stock_id = ? AND amount > 0", stockID).Order("year, month").Find(&dividends).Error
 	return dividends, err
 }
 
 func (r *GormDividendRepository) FindByStockIDAndYear(stockID uint, year int) ([]domain.Dividend, error) {
 	var dividends []domain.Dividend
-	err := r.db.Where("stock_id = ? AND year = ?", stockID, year).Order("month").Find(&dividends).Error
+	err := r.db.Where("stock_id = ? AND year = ? AND amount > 0", stockID, year).Order("month").Find(&dividends).Error
 	return dividends, err
 }
 
