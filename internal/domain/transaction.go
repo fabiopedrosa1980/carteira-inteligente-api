@@ -42,4 +42,5 @@ type AcaoItem struct {
 	DividendYield float64 `json:"dividend_yield"`
 	Nota          float64 `json:"nota"`
 	HistoryReady  bool    `json:"history_ready"`
+	StockID       uint    `json:"stock_id"`
 }

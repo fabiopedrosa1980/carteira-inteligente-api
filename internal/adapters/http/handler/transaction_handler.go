@@ -98,11 +98,13 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 		return
 	}
 
-	// Build a ticker → historyReady map from the stocks catalogue.
+	// Build ticker lookup maps from the stocks catalogue.
 	historyReadyByTicker := map[string]bool{}
+	stockIDByTicker := map[string]uint{}
 	if stocks, err := h.stockRepo.FindAll(domain.StockQuery{}); err == nil {
 		for _, s := range stocks {
 			historyReadyByTicker[s.Ticker] = s.HistoryReady
+			stockIDByTicker[s.Ticker] = s.ID
 		}
 	}
 
@@ -122,6 +124,7 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 				ChangePercent: changePercent,
 				DividendYield: dividendYield,
 				HistoryReady:  historyReadyByTicker[p.Ticker],
+				StockID:       stockIDByTicker[p.Ticker],
 			}
 		}(i, pos)
 	}
