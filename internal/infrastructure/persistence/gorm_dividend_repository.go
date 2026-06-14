@@ -4,6 +4,7 @@ import (
 	"carteira-inteligente-api/internal/domain"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type GormDividendRepository struct {
@@ -16,6 +17,10 @@ func NewGormDividendRepository(db *gorm.DB) domain.DividendRepository {
 
 func (r *GormDividendRepository) Create(d *domain.Dividend) error {
 	return r.db.Create(d).Error
+}
+
+func (r *GormDividendRepository) CreateIfNotExists(d *domain.Dividend) error {
+	return r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(d).Error
 }
 
 func (r *GormDividendRepository) FindByStockID(stockID uint) ([]domain.Dividend, error) {

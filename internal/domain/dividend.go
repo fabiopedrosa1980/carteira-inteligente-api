@@ -16,12 +16,12 @@ const (
 )
 
 type Dividend struct {
-	ID        uint         `gorm:"primaryKey;autoIncrement" json:"id"`
-	StockID   uint         `gorm:"not null;index"           json:"stock_id"`
-	Amount    float64      `gorm:"not null"                 json:"amount"`
-	Month     int          `gorm:"not null"                 json:"month"`
-	Year      int          `gorm:"not null"                 json:"year"`
-	Type      DividendType `gorm:"not null"                 json:"type"`
+	ID        uint         `gorm:"primaryKey;autoIncrement"                 json:"id"`
+	StockID   uint         `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"stock_id"`
+	Amount    float64      `gorm:"not null"                                 json:"amount"`
+	Month     int          `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"month"`
+	Year      int          `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"year"`
+	Type      DividendType `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"type"`
 	ExDate    string       `json:"ex_date"`
 	PayDate   string       `json:"pay_date"`
 	CreatedAt time.Time    `json:"created_at"`

@@ -2,22 +2,26 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"carteira-inteligente-api/internal/adapters/http/dto"
 	"carteira-inteligente-api/internal/application"
 	"carteira-inteligente-api/internal/domain"
+	"carteira-inteligente-api/internal/infrastructure/scraper"
 
 	"github.com/gin-gonic/gin"
 )
 
 type StockHandler struct {
-	service application.StockUseCase
+	service     application.StockUseCase
+	dividendSvc application.DividendUseCase
 }
 
-func NewStockHandler(service application.StockUseCase) *StockHandler {
-	return &StockHandler{service: service}
+func NewStockHandler(service application.StockUseCase, dividendSvc application.DividendUseCase) *StockHandler {
+	return &StockHandler{service: service, dividendSvc: dividendSvc}
 }
 
 func (h *StockHandler) CreateStock(c *gin.Context) {
@@ -50,6 +54,33 @@ func (h *StockHandler) CreateStock(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.FromDomain(stock))
+
+	// Import dividend history from Investidor10 in background.
+	go h.importDividends(stock.ID, stock.Ticker)
+}
+
+func (h *StockHandler) importDividends(stockID uint, ticker string) {
+	since := time.Now().AddDate(-5, 0, 0)
+	dividends, err := scraper.FetchDividends(ticker, since)
+	if err != nil {
+		log.Printf("[scraper] %s: %v", ticker, err)
+		return
+	}
+	for _, d := range dividends {
+		div := &domain.Dividend{
+			StockID: stockID,
+			Amount:  d.Amount,
+			Month:   d.Month,
+			Year:    d.Year,
+			Type:    d.Type,
+			ExDate:  d.ExDate,
+			PayDate: d.PayDate,
+		}
+		if err := h.dividendSvc.CreateIfNotExists(div); err != nil {
+			log.Printf("[scraper] insert %s %s: %v", ticker, d.ExDate, err)
+		}
+	}
+	log.Printf("[scraper] %s: imported %d dividends", ticker, len(dividends))
 }
 
 func (h *StockHandler) GetStock(c *gin.Context) {

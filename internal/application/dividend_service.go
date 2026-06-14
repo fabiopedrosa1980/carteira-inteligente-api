@@ -12,6 +12,7 @@ var monthNames = [12]string{
 
 type DividendUseCase interface {
 	CreateDividend(stockID uint, d *domain.Dividend) error
+	CreateIfNotExists(d *domain.Dividend) error
 	ListDividendsByStock(stockID uint, year *int) ([]domain.Dividend, error)
 	GetMonthlySummary(year int) ([]dto.MonthSummaryResponse, error)
 }
@@ -23,6 +24,10 @@ type DividendService struct {
 
 func NewDividendService(repo domain.DividendRepository, stockRepo domain.StockRepository) *DividendService {
 	return &DividendService{repo: repo, stockRepo: stockRepo}
+}
+
+func (s *DividendService) CreateIfNotExists(d *domain.Dividend) error {
+	return s.repo.CreateIfNotExists(d)
 }
 
 func (s *DividendService) CreateDividend(stockID uint, d *domain.Dividend) error {

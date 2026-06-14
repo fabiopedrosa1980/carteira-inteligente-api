@@ -25,15 +25,24 @@ func setupRouter(t *testing.T) *gin.Engine {
 		t.Fatalf("failed to setup db: %v", err)
 	}
 	stockRepo := persistence.NewGormStockRepository(db)
-	svc := application.NewStockService(stockRepo)
-	h := handler.NewStockHandler(svc)
 	dividendRepo := persistence.NewGormDividendRepository(db)
 	divSvc := application.NewDividendService(dividendRepo, stockRepo)
 	divH := handler.NewDividendHandler(divSvc)
+
+	svc := application.NewStockService(stockRepo)
+	h := handler.NewStockHandler(svc, divSvc)
+
 	transactionRepo := persistence.NewGormTransactionRepository(db)
 	txSvc := application.NewTransactionService(transactionRepo)
 	txH := handler.NewTransactionHandler(txSvc)
-	return router.SetupRouter(h, divH, txH)
+
+	quoteH := handler.NewQuoteHandler()
+
+	goalRepo := persistence.NewGormGoalRepository(db)
+	goalSvc := application.NewGoalService(goalRepo)
+	goalH := handler.NewGoalHandler(goalSvc, txSvc, stockRepo)
+
+	return router.SetupRouter(h, divH, txH, quoteH, goalH)
 }
 
 func toJSON(t *testing.T, v any) *bytes.Buffer {

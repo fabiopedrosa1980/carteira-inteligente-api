@@ -21,11 +21,12 @@ func main() {
 
 	stockRepo := persistence.NewGormStockRepository(db)
 	stockService := application.NewStockService(stockRepo)
-	stockHandler := handler.NewStockHandler(stockService)
 
 	dividendRepo := persistence.NewGormDividendRepository(db)
 	dividendService := application.NewDividendService(dividendRepo, stockRepo)
 	dividendHandler := handler.NewDividendHandler(dividendService)
+
+	stockHandler := handler.NewStockHandler(stockService, dividendService)
 
 	transactionRepo := persistence.NewGormTransactionRepository(db)
 	transactionService := application.NewTransactionService(transactionRepo)
