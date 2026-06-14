@@ -1,5 +1,3 @@
-// Deploy: 2026-06-14 — força redeploy no Render (chave de unicidade de
-// dividendos e robustez do scraper investidor10).
 package main
 
 import (
@@ -16,9 +14,6 @@ func main() {
 	db, err := persistence.NewDB()
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
-	}
-	if err := persistence.SeedIfEmpty(db); err != nil {
-		log.Fatalf("failed to seed database: %v", err)
 	}
 
 	stockRepo := persistence.NewGormStockRepository(db)
