@@ -18,7 +18,7 @@ const (
 type Dividend struct {
 	ID        uint         `gorm:"primaryKey;autoIncrement"                 json:"id"`
 	StockID   uint         `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"stock_id"`
-	Amount    float64      `gorm:"not null"                                 json:"amount"`
+	Amount    float64      `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"amount"`
 	Month     int          `gorm:"not null"                                 json:"month"`
 	Year      int          `gorm:"not null"                                 json:"year"`
 	Type      DividendType `gorm:"not null;uniqueIndex:idx_dividend_unique" json:"type"`
