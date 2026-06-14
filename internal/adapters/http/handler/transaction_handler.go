@@ -17,12 +17,24 @@ import (
 )
 
 type TransactionHandler struct {
-	service   application.TransactionUseCase
-	stockRepo domain.StockRepository
+	service     application.TransactionUseCase
+	stockRepo   domain.StockRepository
+	stockSvc    application.StockUseCase
+	dividendSvc application.DividendUseCase
 }
 
-func NewTransactionHandler(service application.TransactionUseCase, stockRepo domain.StockRepository) *TransactionHandler {
-	return &TransactionHandler{service: service, stockRepo: stockRepo}
+func NewTransactionHandler(
+	service application.TransactionUseCase,
+	stockRepo domain.StockRepository,
+	stockSvc application.StockUseCase,
+	dividendSvc application.DividendUseCase,
+) *TransactionHandler {
+	return &TransactionHandler{
+		service:     service,
+		stockRepo:   stockRepo,
+		stockSvc:    stockSvc,
+		dividendSvc: dividendSvc,
+	}
 }
 
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
@@ -55,6 +67,52 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.TransactionFromDomain(t))
+
+	// Para ações, garante que exista um Stock no catálogo (criando-o com a
+	// cotação atual) e importa o histórico de dividendos do Investidor10 em
+	// background. Sem isso o histórico de dividendos nunca seria populado.
+	if t.AssetType == domain.AssetTypeAcoes {
+		go h.ensureStockAndImport(t.Ticker)
+	}
+}
+
+// ensureStockAndImport cria o Stock para o ticker caso ainda não exista e
+// dispara a importação de dividendos. É idempotente: se o stock já existir,
+// não faz nada.
+func (h *TransactionHandler) ensureStockAndImport(ticker string) {
+	if h.stockSvc == nil || h.dividendSvc == nil {
+		return
+	}
+	// Já existe no catálogo?
+	if stocks, err := h.stockRepo.FindAll(domain.StockQuery{}); err == nil {
+		for _, s := range stocks {
+			if s.Ticker == ticker {
+				return
+			}
+		}
+	}
+
+	price, _, name, dy := fetchYahooQuote(ticker)
+	if price <= 0 {
+		// CurrentPrice precisa ser > 0 para passar na validação do domínio.
+		price = 0.01
+	}
+	if name == "" {
+		name = ticker
+	}
+	stock := &domain.Stock{
+		Ticker:       ticker,
+		Name:         name,
+		Sector:       "Ações",
+		CurrentPrice: price,
+		DY:           dy,
+	}
+	if err := h.stockSvc.CreateStock(stock); err != nil {
+		// Corrida: outro request pode ter criado o stock nesse meio tempo.
+		return
+	}
+
+	importDividendsForStock(h.dividendSvc, h.stockSvc, stock.ID, ticker)
 }
 
 func (h *TransactionHandler) ListTransactions(c *gin.Context) {

@@ -34,7 +34,7 @@ func setupRouter(t *testing.T) *gin.Engine {
 
 	transactionRepo := persistence.NewGormTransactionRepository(db)
 	txSvc := application.NewTransactionService(transactionRepo)
-	txH := handler.NewTransactionHandler(txSvc, stockRepo)
+	txH := handler.NewTransactionHandler(txSvc, stockRepo, svc, divSvc)
 
 	quoteH := handler.NewQuoteHandler()
 

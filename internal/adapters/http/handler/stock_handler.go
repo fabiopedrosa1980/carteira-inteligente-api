@@ -60,6 +60,13 @@ func (h *StockHandler) CreateStock(c *gin.Context) {
 }
 
 func (h *StockHandler) importDividends(stockID uint, ticker string) {
+	importDividendsForStock(h.dividendSvc, h.service, stockID, ticker)
+}
+
+// importDividendsForStock busca o histórico de dividendos do Investidor10 para
+// o ticker e persiste cada registro, marcando o stock como history_ready ao
+// final. Reutilizado pelo cadastro de stock e pela criação de transações.
+func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string) {
 	since := time.Now().AddDate(-5, 0, 0)
 	dividends, err := scraper.FetchDividends(ticker, since)
 	if err != nil {
@@ -76,11 +83,11 @@ func (h *StockHandler) importDividends(stockID uint, ticker string) {
 			ExDate:  d.ExDate,
 			PayDate: d.PayDate,
 		}
-		if err := h.dividendSvc.CreateIfNotExists(div); err != nil {
+		if err := dividendSvc.CreateIfNotExists(div); err != nil {
 			log.Printf("[scraper] insert %s %s: %v", ticker, d.ExDate, err)
 		}
 	}
-	if err := h.service.UpdateHistoryReady(stockID, true); err != nil {
+	if err := stockSvc.UpdateHistoryReady(stockID, true); err != nil {
 		log.Printf("[scraper] mark history_ready %s: %v", ticker, err)
 	}
 	log.Printf("[scraper] %s: imported %d dividends", ticker, len(dividends))

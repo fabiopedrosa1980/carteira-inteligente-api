@@ -27,7 +27,7 @@ func main() {
 
 	transactionRepo := persistence.NewGormTransactionRepository(db)
 	transactionService := application.NewTransactionService(transactionRepo)
-	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo)
+	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo, stockService, dividendService)
 
 	quoteHandler := handler.NewQuoteHandler()
 
