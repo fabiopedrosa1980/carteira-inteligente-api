@@ -8,6 +8,7 @@ type StockUseCase interface {
 	ListStocks(query domain.StockQuery) ([]domain.Stock, error)
 	UpdateStock(id uint, updated *domain.Stock) (*domain.Stock, error)
 	DeleteStock(id uint) error
+	UpdateHistoryReady(id uint, ready bool) error
 }
 
 type StockService struct {
@@ -57,4 +58,8 @@ func (s *StockService) UpdateStock(id uint, updated *domain.Stock) (*domain.Stoc
 
 func (s *StockService) DeleteStock(id uint) error {
 	return s.repo.Delete(id)
+}
+
+func (s *StockService) UpdateHistoryReady(id uint, ready bool) error {
+	return s.repo.UpdateHistoryReady(id, ready)
 }

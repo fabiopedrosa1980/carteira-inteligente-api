@@ -30,7 +30,7 @@ func main() {
 
 	transactionRepo := persistence.NewGormTransactionRepository(db)
 	transactionService := application.NewTransactionService(transactionRepo)
-	transactionHandler := handler.NewTransactionHandler(transactionService)
+	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo)
 
 	quoteHandler := handler.NewQuoteHandler()
 

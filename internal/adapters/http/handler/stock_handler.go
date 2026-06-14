@@ -80,6 +80,9 @@ func (h *StockHandler) importDividends(stockID uint, ticker string) {
 			log.Printf("[scraper] insert %s %s: %v", ticker, d.ExDate, err)
 		}
 	}
+	if err := h.service.UpdateHistoryReady(stockID, true); err != nil {
+		log.Printf("[scraper] mark history_ready %s: %v", ticker, err)
+	}
 	log.Printf("[scraper] %s: imported %d dividends", ticker, len(dividends))
 }
 

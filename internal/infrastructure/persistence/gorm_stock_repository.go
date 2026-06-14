@@ -81,3 +81,14 @@ func (r *GormStockRepository) Delete(id uint) error {
 	}
 	return nil
 }
+
+func (r *GormStockRepository) UpdateHistoryReady(id uint, ready bool) error {
+	result := r.db.Model(&domain.Stock{}).Where("id = ?", id).Update("history_ready", ready)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}

@@ -41,4 +41,5 @@ type AcaoItem struct {
 	ChangePercent float64 `json:"change_percent"`
 	DividendYield float64 `json:"dividend_yield"`
 	Nota          float64 `json:"nota"`
+	HistoryReady  bool    `json:"history_ready"`
 }

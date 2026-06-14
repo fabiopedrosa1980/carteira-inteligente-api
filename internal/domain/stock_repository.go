@@ -11,4 +11,5 @@ type StockRepository interface {
 	FindAll(query StockQuery) ([]Stock, error)
 	Update(stock *Stock) error
 	Delete(id uint) error
+	UpdateHistoryReady(id uint, ready bool) error
 }

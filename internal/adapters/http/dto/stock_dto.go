@@ -33,6 +33,7 @@ type StockResponse struct {
 	CurrentPrice float64 `json:"current_price"`
 	DailyChange  float64 `json:"daily_change"`
 	DY           float64 `json:"dy"`
+	HistoryReady bool    `json:"history_ready"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
 }
@@ -47,6 +48,7 @@ func FromDomain(s *domain.Stock) StockResponse {
 		CurrentPrice: s.CurrentPrice,
 		DailyChange:  s.DailyChange,
 		DY:           s.DY,
+		HistoryReady: s.HistoryReady,
 		CreatedAt:    s.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:    s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

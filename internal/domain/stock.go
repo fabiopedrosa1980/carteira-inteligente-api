@@ -21,6 +21,7 @@ type Stock struct {
 	CurrentPrice float64   `json:"current_price"`
 	DailyChange  float64   `json:"daily_change"`
 	DY           float64   `json:"dy"`
+	HistoryReady bool      `gorm:"default:false" json:"history_ready"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

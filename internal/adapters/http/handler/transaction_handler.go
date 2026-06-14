@@ -17,11 +17,12 @@ import (
 )
 
 type TransactionHandler struct {
-	service application.TransactionUseCase
+	service   application.TransactionUseCase
+	stockRepo domain.StockRepository
 }
 
-func NewTransactionHandler(service application.TransactionUseCase) *TransactionHandler {
-	return &TransactionHandler{service: service}
+func NewTransactionHandler(service application.TransactionUseCase, stockRepo domain.StockRepository) *TransactionHandler {
+	return &TransactionHandler{service: service, stockRepo: stockRepo}
 }
 
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
@@ -97,6 +98,14 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 		return
 	}
 
+	// Build a ticker → historyReady map from the stocks catalogue.
+	historyReadyByTicker := map[string]bool{}
+	if stocks, err := h.stockRepo.FindAll(domain.StockQuery{}); err == nil {
+		for _, s := range stocks {
+			historyReadyByTicker[s.Ticker] = s.HistoryReady
+		}
+	}
+
 	items := make([]*domain.AcaoItem, len(positions))
 	var wg sync.WaitGroup
 	for i, pos := range positions {
@@ -112,6 +121,7 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 				CurrentPrice:  price,
 				ChangePercent: changePercent,
 				DividendYield: dividendYield,
+				HistoryReady:  historyReadyByTicker[p.Ticker],
 			}
 		}(i, pos)
 	}
