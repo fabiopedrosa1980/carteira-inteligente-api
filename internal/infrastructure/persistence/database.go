@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"fmt"
+	"log"
 	"os"
 
 	"carteira-inteligente-api/internal/domain"
@@ -10,13 +12,24 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrMissingDatabaseURL indica que a app foi iniciada em produção sem a DSN do
+// PostgreSQL. Falhar é proposital: o fallback SQLite em memória é efêmero e
+// perderia todos os dados a cada restart no Render.
+var ErrMissingDatabaseURL = fmt.Errorf("DATABASE_URL é obrigatória em produção (APP_ENV=production)")
+
 // NewDB resolve o driver a partir do ambiente: se DATABASE_URL estiver definida,
-// conecta ao PostgreSQL (persistência durável); caso contrário, usa SQLite em
-// memória como fallback (dev local e testes).
+// conecta ao PostgreSQL (persistência durável). Caso contrário, em produção a
+// app falha (ErrMissingDatabaseURL); fora de produção usa SQLite em memória como
+// fallback de conveniência para dev local.
 func NewDB() (*gorm.DB, error) {
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		log.Println("[db] conectando ao PostgreSQL via DATABASE_URL")
 		return NewPostgresDB(dsn)
 	}
+	if os.Getenv("APP_ENV") == "production" {
+		return nil, ErrMissingDatabaseURL
+	}
+	log.Println("[db] DATABASE_URL ausente; usando SQLite em memória (dev/teste)")
 	return NewDBWithDSN("file::memory:?cache=shared")
 }
 

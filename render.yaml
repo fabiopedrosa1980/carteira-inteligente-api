@@ -6,6 +6,10 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      # Marca o ambiente como produção: sem DATABASE_URL a app falha no boot
+      # em vez de cair no SQLite em memória (efêmero).
+      - key: APP_ENV
+        value: production
       # DSN do PostgreSQL no formato:
       # postgresql://USER:PASSWORD@HOST:5432/carteira_digital_bd?sslmode=require
       # Valor definido no dashboard/secret do Render (nunca commitado).
