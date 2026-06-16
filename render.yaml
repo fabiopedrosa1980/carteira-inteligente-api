@@ -6,3 +6,8 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      # DSN do PostgreSQL no formato:
+      # postgresql://USER:PASSWORD@HOST:5432/carteira_digital_bd?sslmode=require
+      # Valor definido no dashboard/secret do Render (nunca commitado).
+      - key: DATABASE_URL
+        sync: false
