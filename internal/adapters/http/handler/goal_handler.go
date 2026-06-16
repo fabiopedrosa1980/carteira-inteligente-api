@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -33,7 +34,8 @@ func (h *GoalHandler) ListGoals(c *gin.Context) {
 }
 
 func (h *GoalHandler) buildGoalResponses(userID string, goals []domain.Goal) []dto.GoalResponse {
-	positions, err := h.txService.GetAcoesPositions(userID)
+	// Patrimônio das metas considera todos os tipos de ativo (Ações, FIIs e ETFs).
+	positions, err := h.txService.GetAllPositions(userID)
 	if err != nil || len(positions) == 0 {
 		out := make([]dto.GoalResponse, len(goals))
 		for i := range goals {
@@ -102,7 +104,7 @@ func (h *GoalHandler) CreateGoal(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-	c.JSON(http.StatusCreated, dto.GoalFromDomain(g, 0, 0))
+	c.JSON(http.StatusCreated, dto.GoalWithMessage(g, 0, 0, fmt.Sprintf("Meta \"%s\" criada com sucesso.", g.Name)))
 }
 
 func (h *GoalHandler) UpdateGoal(c *gin.Context) {
@@ -125,7 +127,7 @@ func (h *GoalHandler) UpdateGoal(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-	c.JSON(http.StatusOK, dto.GoalFromDomain(updated, 0, 0))
+	c.JSON(http.StatusOK, dto.GoalWithMessage(updated, 0, 0, fmt.Sprintf("Meta \"%s\" atualizada com sucesso.", updated.Name)))
 }
 
 func (h *GoalHandler) DeleteGoal(c *gin.Context) {

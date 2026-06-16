@@ -7,4 +7,5 @@ type TransactionRepository interface {
 	GetByID(userID string, id uint) (*Transaction, error)
 	Delete(userID string, id uint) error
 	GetAcoesPositions(userID string) ([]*AcoesPosition, error)
+	GetAllPositions(userID string) ([]*AcoesPosition, error)
 }

@@ -2,10 +2,18 @@ package domain
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
 var ErrTransactionNotFound = errors.New("transaction not found")
+
+// NormalizeTicker padroniza o ticker removendo espaços nas extremidades e
+// convertendo para caixa alta, de modo que variações de digitação do mesmo
+// ativo (ex.: " petr4 ", "PETR4") sejam tratadas como um único ticker.
+func NormalizeTicker(ticker string) string {
+	return strings.ToUpper(strings.TrimSpace(ticker))
+}
 
 type AssetType string
 
@@ -27,20 +35,22 @@ type Transaction struct {
 }
 
 type AcoesPosition struct {
-	Ticker        string
-	TotalQuantity float64
-	AvgPrice      float64
+	Ticker           string
+	TotalQuantity    float64
+	AvgPrice         float64
+	TransactionCount int
 }
 
 type AcaoItem struct {
-	Ticker        string  `json:"ticker"`
-	Name          string  `json:"name"`
-	TotalQuantity float64 `json:"total_quantity"`
-	AvgPrice      float64 `json:"avg_price"`
-	CurrentPrice  float64 `json:"current_price"`
-	ChangePercent float64 `json:"change_percent"`
-	DividendYield float64 `json:"dividend_yield"`
-	Nota          float64 `json:"nota"`
-	HistoryReady  bool    `json:"history_ready"`
-	StockID       uint    `json:"stock_id"`
+	Ticker           string  `json:"ticker"`
+	Name             string  `json:"name"`
+	TotalQuantity    float64 `json:"total_quantity"`
+	AvgPrice         float64 `json:"avg_price"`
+	CurrentPrice     float64 `json:"current_price"`
+	ChangePercent    float64 `json:"change_percent"`
+	DividendYield    float64 `json:"dividend_yield"`
+	Nota             float64 `json:"nota"`
+	HistoryReady     bool    `json:"history_ready"`
+	StockID          uint    `json:"stock_id"`
+	TransactionCount int     `json:"transaction_count"`
 }

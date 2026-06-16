@@ -51,16 +51,35 @@ func (r *GormTransactionRepository) Delete(userID string, id uint) error {
 }
 
 func (r *GormTransactionRepository) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return r.aggregatePositions(userID, domain.AssetTypeAcoes)
+}
+
+func (r *GormTransactionRepository) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return r.aggregatePositions(userID, "")
+}
+
+// aggregatePositions consolida os lançamentos por ticker normalizado
+// (UPPER(TRIM(ticker))) somando quantidade, calculando o preço médio ponderado
+// e contando quantos lançamentos compõem cada posição. Quando assetType é vazio,
+// considera todos os tipos de ativo (Ações, FIIs e ETFs); caso contrário, filtra
+// pelo tipo informado. Agrupar pelo ticker normalizado consolida também dados
+// legados gravados com caixa/espaço inconsistentes, evitando duplicação.
+func (r *GormTransactionRepository) aggregatePositions(userID string, assetType domain.AssetType) ([]*domain.AcoesPosition, error) {
 	type row struct {
-		Ticker        string
-		TotalQuantity float64
-		AvgPrice      float64
+		Ticker           string
+		TotalQuantity    float64
+		AvgPrice         float64
+		TransactionCount int
 	}
 	var rows []row
-	err := r.db.Model(&domain.Transaction{}).
-		Select("ticker, SUM(quantity) as total_quantity, SUM(quantity*price)/SUM(quantity) as avg_price").
-		Where("user_id = ? AND asset_type = ?", userID, domain.AssetTypeAcoes).
-		Group("ticker").
+	q := r.db.Model(&domain.Transaction{}).
+		Select("UPPER(TRIM(ticker)) as ticker, SUM(quantity) as total_quantity, SUM(quantity*price)/SUM(quantity) as avg_price, COUNT(*) as transaction_count").
+		Where("user_id = ?", userID)
+	if assetType != "" {
+		q = q.Where("asset_type = ?", assetType)
+	}
+	err := q.
+		Group("UPPER(TRIM(ticker))").
 		Having("SUM(quantity) > 0").
 		Order("ticker").
 		Scan(&rows).Error
@@ -70,9 +89,10 @@ func (r *GormTransactionRepository) GetAcoesPositions(userID string) ([]*domain.
 	result := make([]*domain.AcoesPosition, len(rows))
 	for i, r := range rows {
 		result[i] = &domain.AcoesPosition{
-			Ticker:        r.Ticker,
-			TotalQuantity: r.TotalQuantity,
-			AvgPrice:      r.AvgPrice,
+			Ticker:           r.Ticker,
+			TotalQuantity:    r.TotalQuantity,
+			AvgPrice:         r.AvgPrice,
+			TransactionCount: r.TransactionCount,
 		}
 	}
 	return result, nil

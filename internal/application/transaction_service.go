@@ -9,6 +9,7 @@ type TransactionUseCase interface {
 	GetByID(userID string, id uint) (*domain.Transaction, error)
 	Delete(userID string, id uint) error
 	GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error)
+	GetAllPositions(userID string) ([]*domain.AcoesPosition, error)
 }
 
 type TransactionService struct {
@@ -20,10 +21,12 @@ func NewTransactionService(repo domain.TransactionRepository) *TransactionServic
 }
 
 func (s *TransactionService) Create(t *domain.Transaction) error {
+	t.Ticker = domain.NormalizeTicker(t.Ticker)
 	return s.repo.Create(t)
 }
 
 func (s *TransactionService) Update(t *domain.Transaction) error {
+	t.Ticker = domain.NormalizeTicker(t.Ticker)
 	if _, err := s.repo.GetByID(t.UserID, t.ID); err != nil {
 		return domain.ErrTransactionNotFound
 	}
@@ -47,4 +50,8 @@ func (s *TransactionService) Delete(userID string, id uint) error {
 
 func (s *TransactionService) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return s.repo.GetAcoesPositions(userID)
+}
+
+func (s *TransactionService) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return s.repo.GetAllPositions(userID)
 }

@@ -66,7 +66,8 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, dto.TransactionFromDomain(t))
+	msg := fmt.Sprintf("Lançamento de %s registrado: %g cota(s) a R$ %.2f. Lançamentos do mesmo ativo são somados em Meus Ativos.", t.Ticker, t.Quantity, t.Price)
+	c.JSON(http.StatusCreated, dto.TransactionWithMessage(t, msg))
 
 	// Para ações, garante que exista um Stock no catálogo (criando-o com a
 	// cotação atual) e importa o histórico de dividendos do Investidor10 em
@@ -154,7 +155,7 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.TransactionFromDomain(t))
+	c.JSON(http.StatusOK, dto.TransactionWithMessage(t, "Lançamento atualizado com sucesso."))
 }
 
 func (h *TransactionHandler) ListTransactions(c *gin.Context) {
@@ -216,15 +217,16 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 			defer wg.Done()
 			price, changePercent, name, dividendYield := fetchYahooQuote(p.Ticker)
 			items[idx] = &domain.AcaoItem{
-				Ticker:        p.Ticker,
-				Name:          name,
-				TotalQuantity: p.TotalQuantity,
-				AvgPrice:      p.AvgPrice,
-				CurrentPrice:  price,
-				ChangePercent: changePercent,
-				DividendYield: dividendYield,
-				HistoryReady:  historyReadyByTicker[p.Ticker],
-				StockID:       stockIDByTicker[p.Ticker],
+				Ticker:           p.Ticker,
+				Name:             name,
+				TotalQuantity:    p.TotalQuantity,
+				AvgPrice:         p.AvgPrice,
+				CurrentPrice:     price,
+				ChangePercent:    changePercent,
+				DividendYield:    dividendYield,
+				HistoryReady:     historyReadyByTicker[p.Ticker],
+				StockID:          stockIDByTicker[p.Ticker],
+				TransactionCount: p.TransactionCount,
 			}
 		}(i, pos)
 	}

@@ -14,6 +14,7 @@ type GoalResponse struct {
 	CreatedAt       string  `json:"createdAt"`
 	CurrentValue    float64 `json:"currentValue"`
 	ProgressPercent float64 `json:"progressPercent"`
+	Message         string  `json:"message,omitempty"`
 }
 
 func GoalFromDomain(g *domain.Goal, currentValue, progressPercent float64) GoalResponse {
@@ -25,4 +26,12 @@ func GoalFromDomain(g *domain.Goal, currentValue, progressPercent float64) GoalR
 		CurrentValue:    currentValue,
 		ProgressPercent: progressPercent,
 	}
+}
+
+// GoalWithMessage adiciona uma mensagem de resultado da ação à resposta, para
+// que a tela de Metas informe o usuário sobre a operação realizada.
+func GoalWithMessage(g *domain.Goal, currentValue, progressPercent float64, message string) GoalResponse {
+	resp := GoalFromDomain(g, currentValue, progressPercent)
+	resp.Message = message
+	return resp
 }

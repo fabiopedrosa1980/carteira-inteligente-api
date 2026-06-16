@@ -28,6 +28,7 @@ type TransactionResponse struct {
 	Price     float64          `json:"price"`
 	Date      time.Time        `json:"date"`
 	CreatedAt time.Time        `json:"created_at"`
+	Message   string           `json:"message,omitempty"`
 }
 
 func TransactionFromDomain(t *domain.Transaction) TransactionResponse {
@@ -40,6 +41,14 @@ func TransactionFromDomain(t *domain.Transaction) TransactionResponse {
 		Date:      t.Date,
 		CreatedAt: t.CreatedAt,
 	}
+}
+
+// TransactionWithMessage adiciona uma mensagem de resultado da ação à resposta,
+// para que a tela de Meus Ativos informe o usuário sobre o lançamento.
+func TransactionWithMessage(t *domain.Transaction, message string) TransactionResponse {
+	resp := TransactionFromDomain(t)
+	resp.Message = message
+	return resp
 }
 
 func TransactionListFromDomain(list []*domain.Transaction) []TransactionResponse {
