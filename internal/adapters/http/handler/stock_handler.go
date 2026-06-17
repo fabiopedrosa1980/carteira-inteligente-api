@@ -96,6 +96,32 @@ func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc a
 	log.Printf("[scraper] %s: imported %d dividends", ticker, len(dividends))
 }
 
+// StartDividendSync reimporta periodicamente o histórico de dividendos de todos
+// os stocks cadastrados. O import inicial ocorre apenas no cadastro do stock, de
+// modo que proventos publicados depois (ex.: novos JCP/dividendos do ano) nunca
+// entrariam. Este job roda imediatamente e a cada `interval`, mantendo a base
+// atualizada. É idempotente: CreateIfNotExists evita duplicar registros.
+func StartDividendSync(stockSvc application.StockUseCase, dividendSvc application.DividendUseCase, interval time.Duration) {
+	go func() {
+		for {
+			refreshAllDividends(stockSvc, dividendSvc)
+			time.Sleep(interval)
+		}
+	}()
+}
+
+func refreshAllDividends(stockSvc application.StockUseCase, dividendSvc application.DividendUseCase) {
+	stocks, err := stockSvc.ListStocks(domain.StockQuery{})
+	if err != nil {
+		log.Printf("[scraper] sync: list stocks: %v", err)
+		return
+	}
+	for _, s := range stocks {
+		importDividendsForStock(dividendSvc, stockSvc, s.ID, s.Ticker)
+	}
+	log.Printf("[scraper] sync: refreshed dividends for %d stocks", len(stocks))
+}
+
 func (h *StockHandler) GetStock(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {

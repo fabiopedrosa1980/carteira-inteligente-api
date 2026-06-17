@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"carteira-inteligente-api/internal/adapters/http/handler"
 	"carteira-inteligente-api/internal/adapters/http/router"
@@ -36,6 +37,10 @@ func main() {
 	goalHandler := handler.NewGoalHandler(goalService, transactionService, stockRepo)
 
 	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler)
+
+	// Mantém o histórico de dividendos atualizado: reimporta no startup e
+	// periodicamente, capturando proventos publicados após o cadastro do stock.
+	handler.StartDividendSync(stockService, dividendService, 12*time.Hour)
 
 	port := os.Getenv("PORT")
 	if port == "" {
