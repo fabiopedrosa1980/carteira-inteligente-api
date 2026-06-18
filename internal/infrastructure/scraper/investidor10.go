@@ -25,12 +25,22 @@ type ScrapedDividend struct {
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
 
-// FetchDividends scrapes the dividend history for a B3 ticker from
-// investidor10.com.br and returns records with pay_date >= since.
-// On any fetch or parse error it returns nil, err; callers should treat
-// this as a soft failure (log and continue).
+// FetchDividends scrapes the dividend history for a B3 ação ticker.
+// Mantido por compatibilidade; delega para FetchDividendsForType (ação).
 func FetchDividends(ticker string, since time.Time) ([]ScrapedDividend, error) {
-	url := fmt.Sprintf("https://investidor10.com.br/acoes/%s/", strings.ToLower(ticker))
+	return FetchDividendsForType(ticker, since, false)
+}
+
+// FetchDividendsForType scrapes the dividend history for a B3 ticker from
+// investidor10.com.br and returns records with pay_date >= since. Quando fii é
+// true usa a seção de FIIs (proventos = rendimento). On any fetch or parse
+// error it returns nil, err; callers should treat this as a soft failure.
+func FetchDividendsForType(ticker string, since time.Time, fii bool) ([]ScrapedDividend, error) {
+	segment := "acoes"
+	if fii {
+		segment = "fiis"
+	}
+	url := fmt.Sprintf("https://investidor10.com.br/%s/%s/", segment, strings.ToLower(ticker))
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -59,6 +69,10 @@ func FetchDividends(ticker string, since time.Time) ([]ScrapedDividend, error) {
 	for _, row := range rows {
 		d, ok := parseRow(row, since)
 		if ok {
+			// Para FIIs, proventos sem marcação de JCP são rendimentos.
+			if fii && d.Type == domain.DividendTypeDividendo {
+				d.Type = domain.DividendTypeRendimento
+			}
 			result = append(result, d)
 		}
 	}

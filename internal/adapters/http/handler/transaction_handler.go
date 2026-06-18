@@ -12,6 +12,7 @@ import (
 	"carteira-inteligente-api/internal/adapters/http/dto"
 	"carteira-inteligente-api/internal/application"
 	"carteira-inteligente-api/internal/domain"
+	"carteira-inteligente-api/internal/infrastructure/scraper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,18 +70,21 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	msg := fmt.Sprintf("Lançamento de %s registrado: %g cota(s) a R$ %.2f. Lançamentos do mesmo ativo são somados em Meus Ativos.", t.Ticker, t.Quantity, t.Price)
 	c.JSON(http.StatusCreated, dto.TransactionWithMessage(t, msg))
 
-	// Para ações, garante que exista um Stock no catálogo (criando-o com a
-	// cotação atual) e importa o histórico de dividendos do Investidor10 em
-	// background. Sem isso o histórico de dividendos nunca seria populado.
-	if t.AssetType == domain.AssetTypeAcoes {
-		go h.ensureStockAndImport(t.Ticker)
+	// Para ações e FIIs, garante que exista um Stock no catálogo (criando-o com
+	// a cotação atual) e importa o histórico de proventos do Investidor10 em
+	// background. Sem isso o histórico nunca seria populado.
+	switch t.AssetType {
+	case domain.AssetTypeAcoes:
+		go h.ensureStockAndImport(t.Ticker, "Ações", false)
+	case domain.AssetTypeFIIs:
+		go h.ensureStockAndImport(t.Ticker, "FIIs", true)
 	}
 }
 
 // ensureStockAndImport cria o Stock para o ticker caso ainda não exista e
-// dispara a importação de dividendos. É idempotente: se o stock já existir,
-// não faz nada.
-func (h *TransactionHandler) ensureStockAndImport(ticker string) {
+// dispara a importação de proventos. É idempotente: se o stock já existir,
+// não faz nada. fii indica se o ativo é um FII (proventos = rendimento).
+func (h *TransactionHandler) ensureStockAndImport(ticker, sector string, fii bool) {
 	if h.stockSvc == nil || h.dividendSvc == nil {
 		return
 	}
@@ -104,7 +108,7 @@ func (h *TransactionHandler) ensureStockAndImport(ticker string) {
 	stock := &domain.Stock{
 		Ticker:       ticker,
 		Name:         name,
-		Sector:       "Ações",
+		Sector:       sector,
 		CurrentPrice: price,
 		DY:           dy,
 	}
@@ -113,7 +117,7 @@ func (h *TransactionHandler) ensureStockAndImport(ticker string) {
 		return
 	}
 
-	importDividendsForStock(h.dividendSvc, h.stockSvc, stock.ID, ticker)
+	importDividendsForStock(h.dividendSvc, h.stockSvc, stock.ID, ticker, fii)
 }
 
 func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
@@ -191,9 +195,20 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 }
 
 func (h *TransactionHandler) GetAcoes(c *gin.Context) {
+	h.respondPositions(c, h.service.GetAcoesPositions)
+}
+
+func (h *TransactionHandler) GetFiis(c *gin.Context) {
+	h.respondPositions(c, h.service.GetFiisPositions)
+}
+
+// respondPositions monta os itens de posição (ações ou FIIs) enriquecidos com
+// cotação em tempo real (Yahoo) e indicadores fundamentais (Status Invest),
+// calcula as notas e responde em JSON.
+func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string) ([]*domain.AcoesPosition, error)) {
 	userID := c.GetString("userID")
 
-	positions, err := h.service.GetAcoesPositions(userID)
+	positions, err := fetch(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
@@ -216,6 +231,8 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 		go func(idx int, p *domain.AcoesPosition) {
 			defer wg.Done()
 			price, changePercent, name, dividendYield := fetchYahooQuote(p.Ticker)
+			// Indicadores são best-effort: ausência não é erro.
+			indicators, _ := scraper.FetchIndicators(p.Ticker)
 			items[idx] = &domain.AcaoItem{
 				Ticker:           p.Ticker,
 				Name:             name,
@@ -227,6 +244,7 @@ func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 				HistoryReady:     historyReadyByTicker[p.Ticker],
 				StockID:          stockIDByTicker[p.Ticker],
 				TransactionCount: p.TransactionCount,
+				Indicators:       indicators,
 			}
 		}(i, pos)
 	}

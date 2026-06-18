@@ -36,7 +36,7 @@ func TestE2E_TransactionCreatesStockAndImportsDividends(t *testing.T) {
 	const ticker = "BBAS3"
 
 	// Simula o efeito colateral da criacao de uma transacao de Acao.
-	h.ensureStockAndImport(ticker)
+	h.ensureStockAndImport(ticker, "Ações", false)
 
 	// 1) Stock deve existir no catalogo com history_ready = true.
 	stocks, err := stockRepo.FindAll(domain.StockQuery{})
@@ -71,7 +71,7 @@ func TestE2E_TransactionCreatesStockAndImportsDividends(t *testing.T) {
 	t.Logf("%s: %d dividendos importados", ticker, len(divs))
 
 	// 3) Idempotencia: chamar de novo nao duplica stock nem dividendos.
-	h.ensureStockAndImport(ticker)
+	h.ensureStockAndImport(ticker, "Ações", false)
 	stocks2, _ := stockRepo.FindAll(domain.StockQuery{})
 	count := 0
 	for _, s := range stocks2 {

@@ -42,7 +42,7 @@ func setupRouter(t *testing.T) *gin.Engine {
 	goalSvc := application.NewGoalService(goalRepo)
 	goalH := handler.NewGoalHandler(goalSvc, txSvc, stockRepo)
 
-	return router.SetupRouter(h, divH, txH, quoteH, goalH)
+	return router.SetupRouter(h, divH, txH, quoteH, goalH, handler.NewSearchHandler())
 }
 
 func toJSON(t *testing.T, v any) *bytes.Buffer {

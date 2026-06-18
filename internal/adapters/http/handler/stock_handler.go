@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"carteira-inteligente-api/internal/adapters/http/dto"
@@ -56,22 +57,27 @@ func (h *StockHandler) CreateStock(c *gin.Context) {
 	c.JSON(http.StatusCreated, dto.FromDomain(stock))
 
 	// Import dividend history from Investidor10 in background.
-	go h.importDividends(stock.ID, stock.Ticker)
+	go h.importDividends(stock.ID, stock.Ticker, isFIISector(stock.Sector))
 }
 
-func (h *StockHandler) importDividends(stockID uint, ticker string) {
-	importDividendsForStock(h.dividendSvc, h.service, stockID, ticker)
+func (h *StockHandler) importDividends(stockID uint, ticker string, fii bool) {
+	importDividendsForStock(h.dividendSvc, h.service, stockID, ticker, fii)
+}
+
+// isFIISector indica se o setor corresponde a um Fundo Imobiliário.
+func isFIISector(sector string) bool {
+	return strings.EqualFold(sector, "FIIs")
 }
 
 // importDividendsForStock busca o histórico de dividendos do Investidor10 para
 // o ticker e persiste cada registro, marcando o stock como history_ready ao
 // final. Reutilizado pelo cadastro de stock e pela criação de transações.
-func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string) {
+func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string, fii bool) {
 	// Janela de 5 anos-calendário: do dia 1º de janeiro de (ano atual - 4) em
 	// diante. Usar AddDate(-5,...) abrangia 6 anos-calendário (o ano de 5 anos
 	// atrás entrava parcialmente), divergindo dos filtros de 5 anos da UI.
 	since := time.Date(time.Now().Year()-4, time.January, 1, 0, 0, 0, 0, time.UTC)
-	dividends, err := scraper.FetchDividends(ticker, since)
+	dividends, err := scraper.FetchDividendsForType(ticker, since, fii)
 	if err != nil {
 		log.Printf("[scraper] %s: %v", ticker, err)
 		return
@@ -117,7 +123,7 @@ func refreshAllDividends(stockSvc application.StockUseCase, dividendSvc applicat
 		return
 	}
 	for _, s := range stocks {
-		importDividendsForStock(dividendSvc, stockSvc, s.ID, s.Ticker)
+		importDividendsForStock(dividendSvc, stockSvc, s.ID, s.Ticker, isFIISector(s.Sector))
 	}
 	log.Printf("[scraper] sync: refreshed dividends for %d stocks", len(stocks))
 }

@@ -42,15 +42,26 @@ type AcoesPosition struct {
 }
 
 type AcaoItem struct {
-	Ticker           string  `json:"ticker"`
-	Name             string  `json:"name"`
-	TotalQuantity    float64 `json:"total_quantity"`
-	AvgPrice         float64 `json:"avg_price"`
-	CurrentPrice     float64 `json:"current_price"`
-	ChangePercent    float64 `json:"change_percent"`
-	DividendYield    float64 `json:"dividend_yield"`
-	Nota             float64 `json:"nota"`
-	HistoryReady     bool    `json:"history_ready"`
-	StockID          uint    `json:"stock_id"`
-	TransactionCount int     `json:"transaction_count"`
+	Ticker           string           `json:"ticker"`
+	Name             string           `json:"name"`
+	TotalQuantity    float64          `json:"total_quantity"`
+	AvgPrice         float64          `json:"avg_price"`
+	CurrentPrice     float64          `json:"current_price"`
+	ChangePercent    float64          `json:"change_percent"`
+	DividendYield    float64          `json:"dividend_yield"`
+	Nota             float64          `json:"nota"`
+	HistoryReady     bool             `json:"history_ready"`
+	StockID          uint             `json:"stock_id"`
+	TransactionCount int              `json:"transaction_count"`
+	Indicators       *StockIndicators `json:"indicators,omitempty"`
+}
+
+// StockIndicators reúne indicadores fundamentais obtidos do Status Invest.
+// Campos são ponteiros (omitempty) para distinguir "ausente" de "zero".
+type StockIndicators struct {
+	PL     *float64 `json:"pl,omitempty"`
+	PVP    *float64 `json:"pvp,omitempty"`
+	DY     *float64 `json:"dy,omitempty"`
+	ROE    *float64 `json:"roe,omitempty"`
+	Payout *float64 `json:"payout,omitempty"`
 }

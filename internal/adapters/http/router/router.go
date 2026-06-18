@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler) *gin.Engine {
+func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler, searchHandler *handler.SearchHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
@@ -32,6 +32,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 
 		v1.GET("/dividends/monthly", dividendHandler.GetMonthlySummary)
 		v1.GET("/quote/:ticker", quoteHandler.GetQuote)
+		v1.GET("/search", searchHandler.Search)
 
 		goals := v1.Group("/goals")
 		goals.Use(middleware.AuthRequired())
@@ -46,6 +47,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		transactions.Use(middleware.AuthRequired())
 		{
 			transactions.GET("/acoes", transactionHandler.GetAcoes)
+			transactions.GET("/fiis", transactionHandler.GetFiis)
 			transactions.POST("", transactionHandler.CreateTransaction)
 			transactions.GET("", transactionHandler.ListTransactions)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)

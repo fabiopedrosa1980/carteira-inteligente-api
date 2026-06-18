@@ -28,6 +28,9 @@ func (m *mockTxRepo) Delete(userID string, id uint) error { return nil }
 func (m *mockTxRepo) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return nil, nil
 }
+func (m *mockTxRepo) GetFiisPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return nil, nil
+}
 func (m *mockTxRepo) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return nil, nil
 }
