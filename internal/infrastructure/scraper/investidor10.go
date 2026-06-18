@@ -299,41 +299,74 @@ func FetchIndicators(ticker string, fii bool) ([]domain.Indicator, error) {
 	return indicators, nil
 }
 
-// extractIndicators percorre o HTML coletando os "cards" de indicadores
-// fundamentalistas. No Investidor10 cada indicador é uma célula (`.cell`) com um
-// rótulo (`.title`) e um valor (`.value`). Coleta todos em ordem, sem duplicar
-// rótulos e ignorando entradas vazias.
+// extractIndicators coleta os Indicadores Fundamentalistas do Investidor10. Eles
+// ficam na seção `#table-indicators` (P/L, P/VP, ROE, DY, margens, EV/EBITDA,
+// Dív./PL etc.) — não na seção "Informações sobre a empresa". Para cada `.cell`:
+// o rótulo é o primeiro `<span>` da célula e o valor é o primeiro `<span>` dentro
+// de `.value` (o número do próprio ativo, ignorando as médias de Setor/Subsetor).
 func extractIndicators(doc *html.Node) []domain.Indicator {
+	table := findFirstByID(doc, "table-indicators")
+	if table == nil {
+		return nil
+	}
+
 	var out []domain.Indicator
 	seen := map[string]bool{}
 
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && hasClass(n, "cell") {
-			titleNode := findFirstByClass(n, "title")
-			valueNode := findFirstByClass(n, "value")
-			if titleNode != nil && valueNode != nil {
-				label := collapseSpaces(nodeText(titleNode))
-				// O Investidor10 mostra o valor abreviado em `.simple-value` e a
-				// versão completa em `.detail-value`. Concatenar ambos duplicava o
-				// número; preferimos o `.simple-value` quando existe.
-				valueSource := valueNode
-				if simple := findFirstByClass(valueNode, "simple-value"); simple != nil {
-					valueSource = simple
-				}
-				value := collapseSpaces(nodeText(valueSource))
-				if label != "" && value != "" && !seen[label] {
-					seen[label] = true
-					out = append(out, domain.Indicator{Label: label, Value: value})
+			label := collapseSpaces(firstSpanText(n))
+			value := ""
+			if valueNode := findFirstByClass(n, "value"); valueNode != nil {
+				value = collapseSpaces(firstSpanText(valueNode))
+				if value == "" {
+					value = collapseSpaces(nodeText(valueNode))
 				}
 			}
+			if label != "" && value != "" && !seen[label] {
+				seen[label] = true
+				out = append(out, domain.Indicator{Label: label, Value: value})
+			}
+			return // não descer em células aninhadas
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walk(c)
 		}
 	}
-	walk(doc)
+	walk(table)
 	return out
+}
+
+// findFirstByID retorna o primeiro elemento com o id informado.
+func findFirstByID(n *html.Node, id string) *html.Node {
+	if n.Type == html.ElementNode {
+		for _, a := range n.Attr {
+			if a.Key == "id" && a.Val == id {
+				return n
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if found := findFirstByID(c, id); found != nil {
+			return found
+		}
+	}
+	return nil
+}
+
+// firstSpanText retorna o texto do primeiro elemento <span> encontrado (em
+// profundidade), normalizado. Vazio se não houver <span>.
+func firstSpanText(n *html.Node) string {
+	if n.Type == html.ElementNode && n.Data == "span" {
+		return nodeText(n)
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if t := firstSpanText(c); t != "" {
+			return t
+		}
+	}
+	return ""
 }
 
 // hasClass retorna true se o elemento possui a classe css informada.
