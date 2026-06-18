@@ -92,3 +92,16 @@ func (r *GormStockRepository) UpdateHistoryReady(id uint, ready bool) error {
 	}
 	return nil
 }
+
+func (r *GormStockRepository) UpdateIndicators(id uint, indicators []domain.Indicator) error {
+	// Select força a escrita do campo (serializer:json) mesmo quando vazio.
+	result := r.db.Model(&domain.Stock{}).Where("id = ?", id).
+		Select("Indicators").Updates(domain.Stock{Indicators: indicators})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}

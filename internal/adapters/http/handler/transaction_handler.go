@@ -12,7 +12,6 @@ import (
 	"carteira-inteligente-api/internal/adapters/http/dto"
 	"carteira-inteligente-api/internal/application"
 	"carteira-inteligente-api/internal/domain"
-	"carteira-inteligente-api/internal/infrastructure/scraper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -195,17 +194,17 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 }
 
 func (h *TransactionHandler) GetAcoes(c *gin.Context) {
-	h.respondPositions(c, h.service.GetAcoesPositions, false)
+	h.respondPositions(c, h.service.GetAcoesPositions)
 }
 
 func (h *TransactionHandler) GetFiis(c *gin.Context) {
-	h.respondPositions(c, h.service.GetFiisPositions, true)
+	h.respondPositions(c, h.service.GetFiisPositions)
 }
 
 // respondPositions monta os itens de posição (ações ou FIIs) enriquecidos com
-// cotação em tempo real (Yahoo) e indicadores fundamentalistas (Investidor10),
-// calcula as notas e responde em JSON.
-func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string) ([]*domain.AcoesPosition, error), fii bool) {
+// cotação em tempo real (Yahoo) e indicadores fundamentalistas persistidos
+// (lidos do banco), calcula as notas e responde em JSON.
+func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string) ([]*domain.AcoesPosition, error)) {
 	userID := c.GetString("userID")
 
 	positions, err := fetch(userID)
@@ -214,13 +213,16 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 		return
 	}
 
-	// Build ticker lookup maps from the stocks catalogue.
+	// Build ticker lookup maps from the stocks catalogue. Os indicadores são
+	// lidos do banco (persistidos no cadastro), sem scraping por requisição.
 	historyReadyByTicker := map[string]bool{}
 	stockIDByTicker := map[string]uint{}
+	indicatorsByTicker := map[string][]domain.Indicator{}
 	if stocks, err := h.stockRepo.FindAll(domain.StockQuery{}); err == nil {
 		for _, s := range stocks {
 			historyReadyByTicker[s.Ticker] = s.HistoryReady
 			stockIDByTicker[s.Ticker] = s.ID
+			indicatorsByTicker[s.Ticker] = s.Indicators
 		}
 	}
 
@@ -231,8 +233,6 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 		go func(idx int, p *domain.AcoesPosition) {
 			defer wg.Done()
 			price, changePercent, name, dividendYield := fetchYahooQuote(p.Ticker)
-			// Indicadores são best-effort: ausência não é erro.
-			indicators, _ := scraper.FetchIndicators(p.Ticker, fii)
 			items[idx] = &domain.AcaoItem{
 				Ticker:           p.Ticker,
 				Name:             name,
@@ -244,7 +244,7 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 				HistoryReady:     historyReadyByTicker[p.Ticker],
 				StockID:          stockIDByTicker[p.Ticker],
 				TransactionCount: p.TransactionCount,
-				Indicators:       indicators,
+				Indicators:       indicatorsByTicker[p.Ticker],
 			}
 		}(i, pos)
 	}

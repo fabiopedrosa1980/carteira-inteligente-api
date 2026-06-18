@@ -73,6 +73,15 @@ func isFIISector(sector string) bool {
 // o ticker e persiste cada registro, marcando o stock como history_ready ao
 // final. Reutilizado pelo cadastro de stock e pela criação de transações.
 func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string, fii bool) {
+	// Indicadores fundamentalistas: buscados uma vez no cadastro (e atualizados
+	// no sync periódico) e persistidos no Stock. Best-effort: falha não impede o
+	// import de dividendos.
+	if indicators, err := scraper.FetchIndicators(ticker, fii); err == nil && len(indicators) > 0 {
+		if err := stockSvc.UpdateIndicators(stockID, indicators); err != nil {
+			log.Printf("[scraper] persist indicators %s: %v", ticker, err)
+		}
+	}
+
 	// Janela de 5 anos-calendário: do dia 1º de janeiro de (ano atual - 4) em
 	// diante. Usar AddDate(-5,...) abrangia 6 anos-calendário (o ano de 5 anos
 	// atrás entrava parcialmente), divergindo dos filtros de 5 anos da UI.

@@ -75,6 +75,15 @@ func (m *mockRepo) UpdateHistoryReady(id uint, ready bool) error {
 	return nil
 }
 
+func (m *mockRepo) UpdateIndicators(id uint, indicators []domain.Indicator) error {
+	s, ok := m.stocks[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	s.Indicators = indicators
+	return nil
+}
+
 func TestCreateStock_Success(t *testing.T) {
 	svc := application.NewStockService(newMockRepo())
 	stock := &domain.Stock{Ticker: "PETR4", Name: "Petrobras", Sector: "Energia", Score: 8.0, CurrentPrice: 35.50}

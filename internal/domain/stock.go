@@ -13,17 +13,18 @@ var (
 )
 
 type Stock struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Ticker       string    `gorm:"uniqueIndex;not null"     json:"ticker"`
-	Name         string    `gorm:"not null"                 json:"name"`
-	Sector       string    `json:"sector"`
-	Score        float64   `json:"score"`
-	CurrentPrice float64   `json:"current_price"`
-	DailyChange  float64   `json:"daily_change"`
-	DY           float64   `json:"dy"`
-	HistoryReady bool      `gorm:"default:false" json:"history_ready"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           uint        `gorm:"primaryKey;autoIncrement" json:"id"`
+	Ticker       string      `gorm:"uniqueIndex;not null"     json:"ticker"`
+	Name         string      `gorm:"not null"                 json:"name"`
+	Sector       string      `json:"sector"`
+	Score        float64     `json:"score"`
+	CurrentPrice float64     `json:"current_price"`
+	DailyChange  float64     `json:"daily_change"`
+	DY           float64     `json:"dy"`
+	HistoryReady bool        `gorm:"default:false" json:"history_ready"`
+	Indicators   []Indicator `gorm:"serializer:json" json:"indicators,omitempty"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
 }
 
 func (s *Stock) Validate() error {

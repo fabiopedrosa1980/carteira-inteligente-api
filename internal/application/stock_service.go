@@ -9,6 +9,7 @@ type StockUseCase interface {
 	UpdateStock(id uint, updated *domain.Stock) (*domain.Stock, error)
 	DeleteStock(id uint) error
 	UpdateHistoryReady(id uint, ready bool) error
+	UpdateIndicators(id uint, indicators []domain.Indicator) error
 }
 
 type StockService struct {
@@ -62,4 +63,8 @@ func (s *StockService) DeleteStock(id uint) error {
 
 func (s *StockService) UpdateHistoryReady(id uint, ready bool) error {
 	return s.repo.UpdateHistoryReady(id, ready)
+}
+
+func (s *StockService) UpdateIndicators(id uint, indicators []domain.Indicator) error {
+	return s.repo.UpdateIndicators(id, indicators)
 }
