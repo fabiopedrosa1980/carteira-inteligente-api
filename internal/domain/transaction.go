@@ -31,7 +31,7 @@ type Transaction struct {
 	Quantity  float64   `gorm:"not null"                 json:"quantity"`
 	Price     float64   `gorm:"not null"                 json:"price"`
 	Date      time.Time `gorm:"not null"                 json:"date"`
-	CreatedAt time.Time                                  `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type AcoesPosition struct {
@@ -42,26 +42,23 @@ type AcoesPosition struct {
 }
 
 type AcaoItem struct {
-	Ticker           string           `json:"ticker"`
-	Name             string           `json:"name"`
-	TotalQuantity    float64          `json:"total_quantity"`
-	AvgPrice         float64          `json:"avg_price"`
-	CurrentPrice     float64          `json:"current_price"`
-	ChangePercent    float64          `json:"change_percent"`
-	DividendYield    float64          `json:"dividend_yield"`
-	Nota             float64          `json:"nota"`
-	HistoryReady     bool             `json:"history_ready"`
-	StockID          uint             `json:"stock_id"`
-	TransactionCount int              `json:"transaction_count"`
-	Indicators       *StockIndicators `json:"indicators,omitempty"`
+	Ticker           string      `json:"ticker"`
+	Name             string      `json:"name"`
+	TotalQuantity    float64     `json:"total_quantity"`
+	AvgPrice         float64     `json:"avg_price"`
+	CurrentPrice     float64     `json:"current_price"`
+	ChangePercent    float64     `json:"change_percent"`
+	DividendYield    float64     `json:"dividend_yield"`
+	Nota             float64     `json:"nota"`
+	HistoryReady     bool        `json:"history_ready"`
+	StockID          uint        `json:"stock_id"`
+	TransactionCount int         `json:"transaction_count"`
+	Indicators       []Indicator `json:"indicators,omitempty"`
 }
 
-// StockIndicators reúne indicadores fundamentais obtidos do Status Invest.
-// Campos são ponteiros (omitempty) para distinguir "ausente" de "zero".
-type StockIndicators struct {
-	PL     *float64 `json:"pl,omitempty"`
-	PVP    *float64 `json:"pvp,omitempty"`
-	DY     *float64 `json:"dy,omitempty"`
-	ROE    *float64 `json:"roe,omitempty"`
-	Payout *float64 `json:"payout,omitempty"`
+// Indicator é um indicador fundamentalista no formato rótulo/valor, com o valor
+// já formatado como exibido na fonte (ex.: "12,34", "8,50%").
+type Indicator struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
 }
