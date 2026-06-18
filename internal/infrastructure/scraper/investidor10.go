@@ -314,7 +314,14 @@ func extractIndicators(doc *html.Node) []domain.Indicator {
 			valueNode := findFirstByClass(n, "value")
 			if titleNode != nil && valueNode != nil {
 				label := collapseSpaces(nodeText(titleNode))
-				value := collapseSpaces(nodeText(valueNode))
+				// O Investidor10 mostra o valor abreviado em `.simple-value` e a
+				// versão completa em `.detail-value`. Concatenar ambos duplicava o
+				// número; preferimos o `.simple-value` quando existe.
+				valueSource := valueNode
+				if simple := findFirstByClass(valueNode, "simple-value"); simple != nil {
+					valueSource = simple
+				}
+				value := collapseSpaces(nodeText(valueSource))
 				if label != "" && value != "" && !seen[label] {
 					seen[label] = true
 					out = append(out, domain.Indicator{Label: label, Value: value})
