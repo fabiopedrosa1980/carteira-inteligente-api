@@ -195,17 +195,17 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 }
 
 func (h *TransactionHandler) GetAcoes(c *gin.Context) {
-	h.respondPositions(c, h.service.GetAcoesPositions)
+	h.respondPositions(c, h.service.GetAcoesPositions, false)
 }
 
 func (h *TransactionHandler) GetFiis(c *gin.Context) {
-	h.respondPositions(c, h.service.GetFiisPositions)
+	h.respondPositions(c, h.service.GetFiisPositions, true)
 }
 
 // respondPositions monta os itens de posição (ações ou FIIs) enriquecidos com
-// cotação em tempo real (Yahoo) e indicadores fundamentais (Status Invest),
+// cotação em tempo real (Yahoo) e indicadores fundamentalistas (Investidor10),
 // calcula as notas e responde em JSON.
-func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string) ([]*domain.AcoesPosition, error)) {
+func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string) ([]*domain.AcoesPosition, error), fii bool) {
 	userID := c.GetString("userID")
 
 	positions, err := fetch(userID)
@@ -232,7 +232,7 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 			defer wg.Done()
 			price, changePercent, name, dividendYield := fetchYahooQuote(p.Ticker)
 			// Indicadores são best-effort: ausência não é erro.
-			indicators, _ := scraper.FetchIndicators(p.Ticker)
+			indicators, _ := scraper.FetchIndicators(p.Ticker, fii)
 			items[idx] = &domain.AcaoItem{
 				Ticker:           p.Ticker,
 				Name:             name,

@@ -2,8 +2,10 @@ package scraper
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -258,4 +260,85 @@ func parseRow(cells []string, since time.Time) (ScrapedDividend, bool) {
 		Month:   int(payDate.Month()),
 		Year:    payDate.Year(),
 	}, true
+}
+
+// FetchIndicators obtém indicadores fundamentalistas (P/L, P/VP, DY, ROE,
+// Payout) de um ativo no Investidor10. Best-effort: em qualquer falha de
+// rede/parse retorna (nil, err); o chamador deve tratar como ausência de
+// indicadores. Quando fii é true usa a seção de FIIs.
+func FetchIndicators(ticker string, fii bool) (*domain.StockIndicators, error) {
+	segment := "acoes"
+	if fii {
+		segment = "fiis"
+	}
+	url := fmt.Sprintf("https://investidor10.com.br/%s/%s/", segment, strings.ToLower(ticker))
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "pt-BR,pt;q=0.9")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("investidor10 indicadores %s: %w", ticker, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("investidor10 indicadores %s: HTTP %d", ticker, resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	ind := parseIndicators(string(body))
+	if ind == nil {
+		return nil, fmt.Errorf("investidor10 indicadores %s: não encontrados", ticker)
+	}
+	return ind, nil
+}
+
+// parseIndicators extrai os indicadores do HTML da página do ativo. Cada
+// indicador é exibido como um rótulo seguido do valor; capturamos o primeiro
+// número (formato BR) que aparece logo após o rótulo.
+func parseIndicators(htmlBody string) *domain.StockIndicators {
+	ind := &domain.StockIndicators{
+		PL:     matchIndicator(htmlBody, "P/L"),
+		PVP:    matchIndicator(htmlBody, "P/VP"),
+		DY:     matchIndicator(htmlBody, "DY"),
+		ROE:    matchIndicator(htmlBody, "ROE"),
+		Payout: matchIndicator(htmlBody, "PAYOUT"),
+	}
+	if ind.PL == nil && ind.PVP == nil && ind.DY == nil && ind.ROE == nil && ind.Payout == nil {
+		return nil
+	}
+	return ind
+}
+
+func matchIndicator(htmlBody, label string) *float64 {
+	re := regexp.MustCompile(`(?is)>\s*` + regexp.QuoteMeta(label) + `\s*<.{0,400}?([-]?\d{1,3}(?:\.\d{3})*(?:,\d+)?)`)
+	m := re.FindStringSubmatch(htmlBody)
+	if len(m) < 2 {
+		return nil
+	}
+	return parseBRNumber(m[1])
+}
+
+// parseBRNumber converte um número no formato brasileiro ("1.234,56", "10,52")
+// para float64. Retorna nil quando não é um número válido.
+func parseBRNumber(raw string) *float64 {
+	s := strings.TrimSpace(raw)
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, ",", ".")
+	if s == "" || s == "-" {
+		return nil
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	return &v
 }
