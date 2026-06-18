@@ -73,12 +73,19 @@ func isFIISector(sector string) bool {
 // o ticker e persiste cada registro, marcando o stock como history_ready ao
 // final. Reutilizado pelo cadastro de stock e pela criação de transações.
 func importDividendsForStock(dividendSvc application.DividendUseCase, stockSvc application.StockUseCase, stockID uint, ticker string, fii bool) {
-	// Indicadores fundamentalistas: buscados uma vez no cadastro (e atualizados
-	// no sync periódico) e persistidos no Stock. Best-effort: falha não impede o
-	// import de dividendos.
-	if indicators, err := scraper.FetchIndicators(ticker, fii); err == nil && len(indicators) > 0 {
-		if err := stockSvc.UpdateIndicators(stockID, indicators); err != nil {
-			log.Printf("[scraper] persist indicators %s: %v", ticker, err)
+	// Perfil do ativo (indicadores fundamentalistas + informações da empresa):
+	// buscado uma vez no cadastro (e atualizado no sync periódico) e persistido no
+	// Stock. Best-effort: falha não impede o import de dividendos.
+	if indicators, companyInfo, err := scraper.FetchProfile(ticker, fii); err == nil {
+		if len(indicators) > 0 {
+			if err := stockSvc.UpdateIndicators(stockID, indicators); err != nil {
+				log.Printf("[scraper] persist indicators %s: %v", ticker, err)
+			}
+		}
+		if len(companyInfo) > 0 {
+			if err := stockSvc.UpdateCompanyInfo(stockID, companyInfo); err != nil {
+				log.Printf("[scraper] persist company info %s: %v", ticker, err)
+			}
 		}
 	}
 

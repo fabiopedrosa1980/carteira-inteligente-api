@@ -23,6 +23,7 @@ type Stock struct {
 	DY           float64     `json:"dy"`
 	HistoryReady bool        `gorm:"default:false" json:"history_ready"`
 	Indicators   []Indicator `gorm:"serializer:json" json:"indicators,omitempty"`
+	CompanyInfo  []Indicator `gorm:"serializer:json" json:"company_info,omitempty"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 }

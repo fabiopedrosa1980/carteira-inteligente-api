@@ -260,11 +260,12 @@ func parseRow(cells []string, since time.Time) (ScrapedDividend, bool) {
 	}, true
 }
 
-// FetchIndicators obtém todos os indicadores fundamentalistas de um ativo no
-// Investidor10, como pares rótulo/valor (valor formatado como exibido).
-// Best-effort: em qualquer falha de rede/parse retorna (nil, err); o chamador
-// deve tratar como ausência de indicadores. Quando fii é true usa a seção de FIIs.
-func FetchIndicators(ticker string, fii bool) ([]domain.Indicator, error) {
+// FetchProfile baixa a página do ativo no Investidor10 uma única vez e extrai
+// tanto os Indicadores Fundamentalistas (`#table-indicators`) quanto as
+// Informações sobre a empresa (`#table-indicators-company`), como pares
+// rótulo/valor. Best-effort: em falha de rede/parse retorna (nil, nil, err);
+// listas vazias quando uma seção não existe. Quando fii é true usa a seção de FIIs.
+func FetchProfile(ticker string, fii bool) (indicators, companyInfo []domain.Indicator, err error) {
 	segment := "acoes"
 	if fii {
 		segment = "fiis"
@@ -272,7 +273,7 @@ func FetchIndicators(ticker string, fii bool) ([]domain.Indicator, error) {
 	url := fmt.Sprintf("https://investidor10.com.br/%s/%s/", segment, strings.ToLower(ticker))
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -280,23 +281,19 @@ func FetchIndicators(ticker string, fii bool) ([]domain.Indicator, error) {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("investidor10 indicadores %s: %w", ticker, err)
+		return nil, nil, fmt.Errorf("investidor10 perfil %s: %w", ticker, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("investidor10 indicadores %s: HTTP %d", ticker, resp.StatusCode)
+		return nil, nil, fmt.Errorf("investidor10 perfil %s: HTTP %d", ticker, resp.StatusCode)
 	}
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("investidor10 indicadores HTML parse %s: %w", ticker, err)
+		return nil, nil, fmt.Errorf("investidor10 perfil HTML parse %s: %w", ticker, err)
 	}
 
-	indicators := extractIndicators(doc)
-	if len(indicators) == 0 {
-		return nil, fmt.Errorf("investidor10 indicadores %s: não encontrados", ticker)
-	}
-	return indicators, nil
+	return extractIndicators(doc), extractCompanyInfo(doc), nil
 }
 
 // extractIndicators coleta os Indicadores Fundamentalistas do Investidor10. Eles
@@ -329,6 +326,46 @@ func extractIndicators(doc *html.Node) []domain.Indicator {
 				out = append(out, domain.Indicator{Label: label, Value: value})
 			}
 			return // não descer em células aninhadas
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(table)
+	return out
+}
+
+// extractCompanyInfo coleta as "Informações sobre a empresa" do Investidor10,
+// na seção `#table-indicators-company`. Cada `.cell` tem `.title` (rótulo) e
+// `.value` com `.simple-value` (valor abreviado) + `.detail-value` (completo);
+// usamos o `.simple-value` para evitar valor duplicado.
+func extractCompanyInfo(doc *html.Node) []domain.Indicator {
+	table := findFirstByID(doc, "table-indicators-company")
+	if table == nil {
+		return nil
+	}
+
+	var out []domain.Indicator
+	seen := map[string]bool{}
+
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode && hasClass(n, "cell") {
+			titleNode := findFirstByClass(n, "title")
+			valueNode := findFirstByClass(n, "value")
+			if titleNode != nil && valueNode != nil {
+				label := collapseSpaces(nodeText(titleNode))
+				valueSource := valueNode
+				if simple := findFirstByClass(valueNode, "simple-value"); simple != nil {
+					valueSource = simple
+				}
+				value := collapseSpaces(nodeText(valueSource))
+				if label != "" && value != "" && !seen[label] {
+					seen[label] = true
+					out = append(out, domain.Indicator{Label: label, Value: value})
+				}
+			}
+			return
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walk(c)

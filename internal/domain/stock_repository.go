@@ -13,4 +13,5 @@ type StockRepository interface {
 	Delete(id uint) error
 	UpdateHistoryReady(id uint, ready bool) error
 	UpdateIndicators(id uint, indicators []Indicator) error
+	UpdateCompanyInfo(id uint, companyInfo []Indicator) error
 }

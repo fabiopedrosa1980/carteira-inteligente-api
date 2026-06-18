@@ -54,6 +54,7 @@ type AcaoItem struct {
 	StockID          uint        `json:"stock_id"`
 	TransactionCount int         `json:"transaction_count"`
 	Indicators       []Indicator `json:"indicators,omitempty"`
+	CompanyInfo      []Indicator `json:"company_info,omitempty"`
 }
 
 // Indicator é um indicador fundamentalista no formato rótulo/valor, com o valor

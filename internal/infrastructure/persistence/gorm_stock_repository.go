@@ -105,3 +105,15 @@ func (r *GormStockRepository) UpdateIndicators(id uint, indicators []domain.Indi
 	}
 	return nil
 }
+
+func (r *GormStockRepository) UpdateCompanyInfo(id uint, companyInfo []domain.Indicator) error {
+	result := r.db.Model(&domain.Stock{}).Where("id = ?", id).
+		Select("CompanyInfo").Updates(domain.Stock{CompanyInfo: companyInfo})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}

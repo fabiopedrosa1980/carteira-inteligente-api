@@ -218,11 +218,13 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 	historyReadyByTicker := map[string]bool{}
 	stockIDByTicker := map[string]uint{}
 	indicatorsByTicker := map[string][]domain.Indicator{}
+	companyInfoByTicker := map[string][]domain.Indicator{}
 	if stocks, err := h.stockRepo.FindAll(domain.StockQuery{}); err == nil {
 		for _, s := range stocks {
 			historyReadyByTicker[s.Ticker] = s.HistoryReady
 			stockIDByTicker[s.Ticker] = s.ID
 			indicatorsByTicker[s.Ticker] = s.Indicators
+			companyInfoByTicker[s.Ticker] = s.CompanyInfo
 		}
 	}
 
@@ -245,6 +247,7 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 				StockID:          stockIDByTicker[p.Ticker],
 				TransactionCount: p.TransactionCount,
 				Indicators:       indicatorsByTicker[p.Ticker],
+				CompanyInfo:      companyInfoByTicker[p.Ticker],
 			}
 		}(i, pos)
 	}
