@@ -3,12 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// truncate2 corta o valor em 2 casas decimais sem arredondar (ex.: 36.8399 → 36.83).
+func truncate2(v float64) float64 {
+	return math.Trunc(v*100) / 100
+}
 
 type QuoteHandler struct{}
 
@@ -185,7 +191,7 @@ func fetchYahooOnDate(ticker, dateStr string) *QuoteResponse {
 		return &QuoteResponse{
 			Ticker: ticker,
 			Name:   name,
-			Price:  price,
+			Price:  truncate2(price),
 			Found:  true,
 		}
 	}
