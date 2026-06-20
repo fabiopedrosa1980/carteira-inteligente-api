@@ -98,8 +98,113 @@ func fetchYahoo(ticker string) *QuoteResponse {
 	return nil
 }
 
+// fetchYahooOnDate retorna o fechamento do ativo na data informada (ou no pregão
+// anterior mais próximo, cobrindo fim de semana/feriado). dateStr no formato
+// YYYY-MM-DD. Reaproveita o sufixo .SA e os hosts/headers do fetchYahoo.
+func fetchYahooOnDate(ticker, dateStr string) *QuoteResponse {
+	d, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return nil
+	}
+	// Janela: data-7d até data+1d (cobre dias sem pregão; limite superior inclusivo).
+	p1 := d.AddDate(0, 0, -7).Unix()
+	p2 := d.AddDate(0, 0, 1).Unix()
+
+	type chartMeta struct {
+		LongName  string `json:"longName"`
+		ShortName string `json:"shortName"`
+	}
+	type indicators struct {
+		Quote []struct {
+			Close []float64 `json:"close"`
+		} `json:"quote"`
+	}
+	type chartResult struct {
+		Meta       chartMeta  `json:"meta"`
+		Timestamp  []int64    `json:"timestamp"`
+		Indicators indicators `json:"indicators"`
+	}
+	type chart struct {
+		Result []chartResult `json:"result"`
+	}
+	type yahooResp struct {
+		Chart chart `json:"chart"`
+	}
+
+	for _, host := range []string{"query2", "query1"} {
+		url := fmt.Sprintf("https://%s.finance.yahoo.com/v8/finance/chart/%s.SA?interval=1d&period1=%d&period2=%d", host, ticker, p1, p2)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+		req.Header.Set("Accept", "*/*")
+
+		resp, err := httpClient.Do(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			if resp != nil {
+				resp.Body.Close()
+			}
+			continue
+		}
+
+		var yr yahooResp
+		err = json.NewDecoder(resp.Body).Decode(&yr)
+		resp.Body.Close()
+		if err != nil || len(yr.Chart.Result) == 0 {
+			continue
+		}
+
+		res := yr.Chart.Result[0]
+		if len(res.Indicators.Quote) == 0 {
+			continue
+		}
+		closes := res.Indicators.Quote[0].Close
+
+		// Último fechamento cujo dia (UTC) seja <= data pedida.
+		price := 0.0
+		found := false
+		for i, ts := range res.Timestamp {
+			if i >= len(closes) {
+				break
+			}
+			day := time.Unix(ts, 0).UTC().Format("2006-01-02")
+			if day <= dateStr && closes[i] > 0 {
+				price = closes[i]
+				found = true
+			}
+		}
+		if !found {
+			continue
+		}
+
+		name := res.Meta.LongName
+		if name == "" {
+			name = res.Meta.ShortName
+		}
+		return &QuoteResponse{
+			Ticker: ticker,
+			Name:   name,
+			Price:  price,
+			Found:  true,
+		}
+	}
+	return nil
+}
+
 func (h *QuoteHandler) GetQuote(c *gin.Context) {
 	ticker := strings.ToUpper(c.Param("ticker"))
+	date := c.Query("date")
+
+	// Data anterior a hoje → preço de fechamento naquela data.
+	if date != "" && date < time.Now().Format("2006-01-02") {
+		if q := fetchYahooOnDate(ticker, date); q != nil {
+			c.JSON(http.StatusOK, q)
+			return
+		}
+		c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false})
+		return
+	}
 
 	if q := fetchYahoo(ticker); q != nil {
 		c.JSON(http.StatusOK, q)
