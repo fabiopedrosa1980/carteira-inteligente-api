@@ -8,5 +8,6 @@ type TransactionRepository interface {
 	Delete(userID string, id uint) error
 	GetAcoesPositions(userID string) ([]*AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*AcoesPosition, error)
+	GetEtfsPositions(userID string) ([]*AcoesPosition, error)
 	GetAllPositions(userID string) ([]*AcoesPosition, error)
 }

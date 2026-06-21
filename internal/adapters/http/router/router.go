@@ -48,6 +48,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		{
 			transactions.GET("/acoes", transactionHandler.GetAcoes)
 			transactions.GET("/fiis", transactionHandler.GetFiis)
+			transactions.GET("/etfs", transactionHandler.GetEtfs)
 			transactions.POST("", transactionHandler.CreateTransaction)
 			transactions.GET("", transactionHandler.ListTransactions)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)

@@ -10,6 +10,7 @@ type TransactionUseCase interface {
 	Delete(userID string, id uint) error
 	GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*domain.AcoesPosition, error)
+	GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetAllPositions(userID string) ([]*domain.AcoesPosition, error)
 }
 
@@ -55,6 +56,10 @@ func (s *TransactionService) GetAcoesPositions(userID string) ([]*domain.AcoesPo
 
 func (s *TransactionService) GetFiisPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return s.repo.GetFiisPositions(userID)
+}
+
+func (s *TransactionService) GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return s.repo.GetEtfsPositions(userID)
 }
 
 func (s *TransactionService) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {

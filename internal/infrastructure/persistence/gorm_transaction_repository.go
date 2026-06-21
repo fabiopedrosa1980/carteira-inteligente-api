@@ -58,6 +58,10 @@ func (r *GormTransactionRepository) GetFiisPositions(userID string) ([]*domain.A
 	return r.aggregatePositions(userID, domain.AssetTypeFIIs)
 }
 
+func (r *GormTransactionRepository) GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return r.aggregatePositions(userID, domain.AssetTypeETFs)
+}
+
 func (r *GormTransactionRepository) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return r.aggregatePositions(userID, "")
 }

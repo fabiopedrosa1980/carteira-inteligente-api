@@ -201,6 +201,10 @@ func (h *TransactionHandler) GetFiis(c *gin.Context) {
 	h.respondPositions(c, h.service.GetFiisPositions)
 }
 
+func (h *TransactionHandler) GetEtfs(c *gin.Context) {
+	h.respondPositions(c, h.service.GetEtfsPositions)
+}
+
 // respondPositions monta os itens de posição (ações ou FIIs) enriquecidos com
 // cotação em tempo real (Yahoo) e indicadores fundamentalistas persistidos
 // (lidos do banco), calcula as notas e responde em JSON.
