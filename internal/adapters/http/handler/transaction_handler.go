@@ -193,6 +193,19 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// DeleteAllTransactions remove todos os lançamentos do usuário de uma vez.
+// Idempotente: responde 204 mesmo quando não há lançamentos a remover.
+func (h *TransactionHandler) DeleteAllTransactions(c *gin.Context) {
+	userID := c.GetString("userID")
+
+	if err := h.service.DeleteAll(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *TransactionHandler) GetAcoes(c *gin.Context) {
 	h.respondPositions(c, h.service.GetAcoesPositions)
 }

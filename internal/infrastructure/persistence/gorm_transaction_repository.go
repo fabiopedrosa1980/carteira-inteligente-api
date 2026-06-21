@@ -50,6 +50,13 @@ func (r *GormTransactionRepository) Delete(userID string, id uint) error {
 	return r.db.Where("user_id = ?", userID).Delete(&domain.Transaction{}, id).Error
 }
 
+// DeleteAll remove todos os lançamentos do usuário. É idempotente: sem registros,
+// não retorna erro. O filtro por user_id satisfaz a proteção do GORM contra
+// deleções globais sem cláusula WHERE.
+func (r *GormTransactionRepository) DeleteAll(userID string) error {
+	return r.db.Where("user_id = ?", userID).Delete(&domain.Transaction{}).Error
+}
+
 func (r *GormTransactionRepository) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return r.aggregatePositions(userID, domain.AssetTypeAcoes)
 }

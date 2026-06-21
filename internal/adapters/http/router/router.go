@@ -52,6 +52,7 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 			transactions.POST("", transactionHandler.CreateTransaction)
 			transactions.GET("", transactionHandler.ListTransactions)
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)
+			transactions.DELETE("", transactionHandler.DeleteAllTransactions)
 			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)
 		}
 	}

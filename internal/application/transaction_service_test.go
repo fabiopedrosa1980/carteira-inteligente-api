@@ -25,10 +25,14 @@ func (m *mockTxRepo) GetByID(userID string, id uint) (*domain.Transaction, error
 	return &domain.Transaction{ID: id, UserID: userID}, nil
 }
 func (m *mockTxRepo) Delete(userID string, id uint) error { return nil }
+func (m *mockTxRepo) DeleteAll(userID string) error       { return nil }
 func (m *mockTxRepo) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return nil, nil
 }
 func (m *mockTxRepo) GetFiisPositions(userID string) ([]*domain.AcoesPosition, error) {
+	return nil, nil
+}
+func (m *mockTxRepo) GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return nil, nil
 }
 func (m *mockTxRepo) GetAllPositions(userID string) ([]*domain.AcoesPosition, error) {
@@ -37,9 +41,9 @@ func (m *mockTxRepo) GetAllPositions(userID string) ([]*domain.AcoesPosition, er
 
 func TestNormalizeTicker(t *testing.T) {
 	cases := map[string]string{
-		" petr4 ": "PETR4",
-		"petr4":   "PETR4",
-		"PETR4":   "PETR4",
+		" petr4 ":  "PETR4",
+		"petr4":    "PETR4",
+		"PETR4":    "PETR4",
 		"  mxrf11": "MXRF11",
 	}
 	for in, want := range cases {

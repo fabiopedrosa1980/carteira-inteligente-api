@@ -6,6 +6,7 @@ type TransactionRepository interface {
 	List(userID, ticker string) ([]*Transaction, error)
 	GetByID(userID string, id uint) (*Transaction, error)
 	Delete(userID string, id uint) error
+	DeleteAll(userID string) error
 	GetAcoesPositions(userID string) ([]*AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*AcoesPosition, error)
 	GetEtfsPositions(userID string) ([]*AcoesPosition, error)

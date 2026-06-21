@@ -126,3 +126,47 @@ func TestGetAllPositions_TodosOsTipos(t *testing.T) {
 		t.Fatalf("esperada 1 posição de Ações, obtida %d", len(acoes))
 	}
 }
+
+// DeleteAll DEVE remover todos os lançamentos do usuário, sem afetar os de
+// outros usuários, e ser idempotente quando não há lançamentos.
+func TestDeleteAll(t *testing.T) {
+	repo := setupTransactionRepo(t)
+	const user = "u1"
+	const other = "u2"
+
+	if err := repo.Create(tx(user, "PETR4", domain.AssetTypeAcoes, 10, 30)); err != nil {
+		t.Fatalf("create 1: %v", err)
+	}
+	if err := repo.Create(tx(user, "MXRF11", domain.AssetTypeFIIs, 100, 10)); err != nil {
+		t.Fatalf("create 2: %v", err)
+	}
+	if err := repo.Create(tx(other, "VALE3", domain.AssetTypeAcoes, 5, 60)); err != nil {
+		t.Fatalf("create other: %v", err)
+	}
+
+	if err := repo.DeleteAll(user); err != nil {
+		t.Fatalf("delete all: %v", err)
+	}
+
+	list, err := repo.List(user, "")
+	if err != nil {
+		t.Fatalf("list user: %v", err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("esperado 0 lançamentos após DeleteAll, obtido %d", len(list))
+	}
+
+	// Lançamentos de outro usuário permanecem intactos.
+	otherList, err := repo.List(other, "")
+	if err != nil {
+		t.Fatalf("list other: %v", err)
+	}
+	if len(otherList) != 1 {
+		t.Fatalf("esperado 1 lançamento do outro usuário preservado, obtido %d", len(otherList))
+	}
+
+	// Idempotência: chamar de novo com a carteira já vazia não retorna erro.
+	if err := repo.DeleteAll(user); err != nil {
+		t.Fatalf("delete all idempotente: %v", err)
+	}
+}

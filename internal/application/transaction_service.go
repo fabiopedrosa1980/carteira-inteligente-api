@@ -8,6 +8,7 @@ type TransactionUseCase interface {
 	List(userID, ticker string) ([]*domain.Transaction, error)
 	GetByID(userID string, id uint) (*domain.Transaction, error)
 	Delete(userID string, id uint) error
+	DeleteAll(userID string) error
 	GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error)
@@ -48,6 +49,11 @@ func (s *TransactionService) Delete(userID string, id uint) error {
 		return domain.ErrTransactionNotFound
 	}
 	return s.repo.Delete(userID, id)
+}
+
+// DeleteAll remove todos os lançamentos do usuário (idempotente).
+func (s *TransactionService) DeleteAll(userID string) error {
+	return s.repo.DeleteAll(userID)
 }
 
 func (s *TransactionService) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
