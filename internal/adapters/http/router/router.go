@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler, searchHandler *handler.SearchHandler) *gin.Engine {
+func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler, searchHandler *handler.SearchHandler, allocationHandler *handler.AllocationHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
@@ -54,6 +54,13 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 			transactions.PUT("/:id", transactionHandler.UpdateTransaction)
 			transactions.DELETE("", transactionHandler.DeleteAllTransactions)
 			transactions.DELETE("/:id", transactionHandler.DeleteTransaction)
+		}
+
+		allocation := v1.Group("/allocation")
+		allocation.Use(middleware.AuthRequired())
+		{
+			allocation.GET("", allocationHandler.GetAllocation)
+			allocation.PUT("", allocationHandler.PutAllocation)
 		}
 	}
 

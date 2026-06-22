@@ -37,7 +37,11 @@ func main() {
 	goalService := application.NewGoalService(goalRepo)
 	goalHandler := handler.NewGoalHandler(goalService, transactionService, stockRepo)
 
-	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler, searchHandler)
+	allocationRepo := persistence.NewGormAllocationRepository(db)
+	allocationService := application.NewAllocationService(allocationRepo)
+	allocationHandler := handler.NewAllocationHandler(allocationService)
+
+	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler, searchHandler, allocationHandler)
 
 	// Mantém o histórico de dividendos atualizado: reimporta no startup e
 	// periodicamente, capturando proventos publicados após o cadastro do stock.
