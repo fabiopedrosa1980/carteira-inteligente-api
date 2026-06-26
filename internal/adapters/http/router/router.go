@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler, searchHandler *handler.SearchHandler, allocationHandler *handler.AllocationHandler) *gin.Engine {
+func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.DividendHandler, transactionHandler *handler.TransactionHandler, quoteHandler *handler.QuoteHandler, goalHandler *handler.GoalHandler, searchHandler *handler.SearchHandler, allocationHandler *handler.AllocationHandler, assetHandler *handler.AssetHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
@@ -33,6 +33,16 @@ func SetupRouter(stockHandler *handler.StockHandler, dividendHandler *handler.Di
 		v1.GET("/dividends/monthly", dividendHandler.GetMonthlySummary)
 		v1.GET("/quote/:ticker", quoteHandler.GetQuote)
 		v1.GET("/search", searchHandler.Search)
+
+		// Catálogo da B3 (b3_assets): resolução/busca local, sem site externo.
+		// A rota estática /assets/search é registrada antes do parâmetro /:ticker.
+		assets := v1.Group("/assets")
+		{
+			assets.GET("/search", assetHandler.SearchAssets)
+			assets.GET("/:ticker", assetHandler.GetAsset)
+		}
+		// Acionamento sob demanda da ingestão (protegido por autenticação).
+		v1.POST("/admin/catalog/refresh", middleware.AuthRequired(), assetHandler.RefreshCatalog)
 
 		goals := v1.Group("/goals")
 		goals.Use(middleware.AuthRequired())

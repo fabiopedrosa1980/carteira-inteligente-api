@@ -67,7 +67,7 @@ func migrate(db *gorm.DB) error {
 	// (stock_id, month, year, type) index would silently drop distinct
 	// dividends of the same type paid in the same month.
 	db.Exec("DROP INDEX IF EXISTS idx_dividend_unique")
-	if err := db.AutoMigrate(&domain.Stock{}, &domain.Dividend{}, &domain.Transaction{}, &domain.Goal{}, &domain.AllocationConfig{}); err != nil {
+	if err := db.AutoMigrate(&domain.Stock{}, &domain.Dividend{}, &domain.Transaction{}, &domain.Goal{}, &domain.AllocationConfig{}, &domain.Asset{}); err != nil {
 		return err
 	}
 	// Remove colunas legadas de metas (type/ticker). A coluna `type` era

@@ -30,7 +30,11 @@ func main() {
 	transactionService := application.NewTransactionService(transactionRepo)
 	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo, stockService, dividendService)
 
-	quoteHandler := handler.NewQuoteHandler()
+	assetRepo := persistence.NewGormAssetRepository(db)
+	assetService := application.NewAssetService(assetRepo)
+	assetHandler := handler.NewAssetHandler(assetService)
+
+	quoteHandler := handler.NewQuoteHandler(assetService)
 	searchHandler := handler.NewSearchHandler()
 
 	goalRepo := persistence.NewGormGoalRepository(db)
@@ -41,11 +45,15 @@ func main() {
 	allocationService := application.NewAllocationService(allocationRepo)
 	allocationHandler := handler.NewAllocationHandler(allocationService)
 
-	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler, searchHandler, allocationHandler)
+	r := router.SetupRouter(stockHandler, dividendHandler, transactionHandler, quoteHandler, goalHandler, searchHandler, allocationHandler, assetHandler)
 
 	// Mantém o histórico de dividendos atualizado: reimporta no startup e
 	// periodicamente, capturando proventos publicados após o cadastro do stock.
 	handler.StartDividendSync(stockService, dividendService, 12*time.Hour)
+
+	// Popula e atualiza o catálogo da B3 (b3_assets) a partir dos sitemaps do
+	// Investidor10. Fonte de verdade do tipo do ativo para /quote e /assets.
+	application.StartCatalogSync(assetService, 24*time.Hour)
 
 	port := os.Getenv("PORT")
 	if port == "" {

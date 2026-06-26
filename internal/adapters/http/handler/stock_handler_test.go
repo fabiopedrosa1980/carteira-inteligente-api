@@ -36,7 +36,11 @@ func setupRouter(t *testing.T) *gin.Engine {
 	txSvc := application.NewTransactionService(transactionRepo)
 	txH := handler.NewTransactionHandler(txSvc, stockRepo, svc, divSvc)
 
-	quoteH := handler.NewQuoteHandler()
+	assetRepo := persistence.NewGormAssetRepository(db)
+	assetSvc := application.NewAssetService(assetRepo)
+	assetH := handler.NewAssetHandler(assetSvc)
+
+	quoteH := handler.NewQuoteHandler(assetSvc)
 
 	goalRepo := persistence.NewGormGoalRepository(db)
 	goalSvc := application.NewGoalService(goalRepo)
@@ -46,7 +50,7 @@ func setupRouter(t *testing.T) *gin.Engine {
 	allocationSvc := application.NewAllocationService(allocationRepo)
 	allocationH := handler.NewAllocationHandler(allocationSvc)
 
-	return router.SetupRouter(h, divH, txH, quoteH, goalH, handler.NewSearchHandler(), allocationH)
+	return router.SetupRouter(h, divH, txH, quoteH, goalH, handler.NewSearchHandler(), allocationH, assetH)
 }
 
 func toJSON(t *testing.T, v any) *bytes.Buffer {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"carteira-inteligente-api/internal/application"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,10 +18,14 @@ func truncate2(v float64) float64 {
 	return math.Trunc(v*100) / 100
 }
 
-type QuoteHandler struct{}
+type QuoteHandler struct {
+	// assets é a fonte do tipo do ativo (catálogo b3_assets). Opcional: quando
+	// nil, AssetType sai vazio e o front aplica o fallback por heurística.
+	assets application.AssetUseCase
+}
 
-func NewQuoteHandler() *QuoteHandler {
-	return &QuoteHandler{}
+func NewQuoteHandler(assets application.AssetUseCase) *QuoteHandler {
+	return &QuoteHandler{assets: assets}
 }
 
 type QuoteResponse struct {
@@ -31,6 +37,22 @@ type QuoteResponse struct {
 	DividendYield float64 `json:"dividendYield"`
 	Sector        string  `json:"sector"`
 	Found         bool    `json:"found"`
+	// AssetType é a classificação autoritativa vinda do catálogo da B3
+	// (Acoes | FIIs | ETFs). Vazio quando o ticker não está no catálogo.
+	AssetType string `json:"assetType"`
+}
+
+// assetTypeFor consulta o tipo do ticker no catálogo local. Best-effort: "" sem
+// catálogo, em erro ou quando o ticker não está cadastrado.
+func (h *QuoteHandler) assetTypeFor(ticker string) string {
+	if h.assets == nil {
+		return ""
+	}
+	a, err := h.assets.GetByTicker(ticker)
+	if err != nil || a == nil {
+		return ""
+	}
+	return a.Type
 }
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -202,20 +224,25 @@ func (h *QuoteHandler) GetQuote(c *gin.Context) {
 	ticker := strings.ToUpper(c.Param("ticker"))
 	date := c.Query("date")
 
+	// Tipo do ativo vem do catálogo local (b3_assets), não de heurística.
+	assetType := h.assetTypeFor(ticker)
+
 	// Data anterior a hoje → preço de fechamento naquela data.
 	if date != "" && date < time.Now().Format("2006-01-02") {
 		if q := fetchYahooOnDate(ticker, date); q != nil {
+			q.AssetType = assetType
 			c.JSON(http.StatusOK, q)
 			return
 		}
-		c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false})
+		c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false, AssetType: assetType})
 		return
 	}
 
 	if q := fetchYahoo(ticker); q != nil {
+		q.AssetType = assetType
 		c.JSON(http.StatusOK, q)
 		return
 	}
 
-	c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false})
+	c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false, AssetType: assetType})
 }
