@@ -26,13 +26,13 @@ func main() {
 
 	stockHandler := handler.NewStockHandler(stockService, dividendService)
 
-	transactionRepo := persistence.NewGormTransactionRepository(db)
-	transactionService := application.NewTransactionService(transactionRepo)
-	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo, stockService, dividendService)
-
 	assetRepo := persistence.NewGormAssetRepository(db)
 	assetService := application.NewAssetService(assetRepo)
 	assetHandler := handler.NewAssetHandler(assetService)
+
+	transactionRepo := persistence.NewGormTransactionRepository(db)
+	transactionService := application.NewTransactionService(transactionRepo)
+	transactionHandler := handler.NewTransactionHandler(transactionService, stockRepo, stockService, dividendService, assetService)
 
 	quoteHandler := handler.NewQuoteHandler(assetService)
 	searchHandler := handler.NewSearchHandler()

@@ -21,6 +21,7 @@ type TransactionHandler struct {
 	stockRepo   domain.StockRepository
 	stockSvc    application.StockUseCase
 	dividendSvc application.DividendUseCase
+	assetSvc    application.AssetUseCase
 }
 
 func NewTransactionHandler(
@@ -28,12 +29,14 @@ func NewTransactionHandler(
 	stockRepo domain.StockRepository,
 	stockSvc application.StockUseCase,
 	dividendSvc application.DividendUseCase,
+	assetSvc application.AssetUseCase,
 ) *TransactionHandler {
 	return &TransactionHandler{
 		service:     service,
 		stockRepo:   stockRepo,
 		stockSvc:    stockSvc,
 		dividendSvc: dividendSvc,
+		assetSvc:    assetSvc,
 	}
 }
 
@@ -49,6 +52,14 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	date, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
+		return
+	}
+
+	// Defesa em profundidade: valida o tipo enviado contra o catálogo b3_assets.
+	// Só bloqueia divergência confirmada (ticker conhecido com tipo diferente);
+	// ticker fora do catálogo é aceito (validação conservadora, sem rede).
+	if msg := h.validateAssetType(req.Ticker, req.AssetType); msg != "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": msg})
 		return
 	}
 
@@ -78,6 +89,24 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	case domain.AssetTypeFIIs:
 		go h.ensureStockAndImport(t.Ticker, "FIIs", true)
 	}
+}
+
+// validateAssetType compara o tipo enviado com o tipo autoritativo do catálogo
+// b3_assets. Retorna mensagem de incompatibilidade quando o ticker é conhecido e
+// o tipo diverge; "" quando confere ou quando o ticker está fora do catálogo
+// (aceito de forma conservadora). Sem catálogo configurado, não bloqueia.
+func (h *TransactionHandler) validateAssetType(ticker string, chosen domain.AssetType) string {
+	if h.assetSvc == nil {
+		return ""
+	}
+	a, err := h.assetSvc.GetByTicker(ticker)
+	if err != nil || a == nil {
+		return "" // ErrNotFound (fora do catálogo) ou erro transitório: não bloqueia
+	}
+	if a.Type != "" && domain.AssetType(a.Type) != chosen {
+		return fmt.Sprintf("Ticker %s é de %s no catálogo da B3, não condiz com o tipo %s informado.", a.Ticker, a.Type, chosen)
+	}
+	return ""
 }
 
 // ensureStockAndImport cria o Stock para o ticker caso ainda não exista e

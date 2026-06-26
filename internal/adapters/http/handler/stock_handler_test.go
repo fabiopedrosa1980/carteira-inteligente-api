@@ -32,13 +32,13 @@ func setupRouter(t *testing.T) *gin.Engine {
 	svc := application.NewStockService(stockRepo)
 	h := handler.NewStockHandler(svc, divSvc)
 
-	transactionRepo := persistence.NewGormTransactionRepository(db)
-	txSvc := application.NewTransactionService(transactionRepo)
-	txH := handler.NewTransactionHandler(txSvc, stockRepo, svc, divSvc)
-
 	assetRepo := persistence.NewGormAssetRepository(db)
 	assetSvc := application.NewAssetService(assetRepo)
 	assetH := handler.NewAssetHandler(assetSvc)
+
+	transactionRepo := persistence.NewGormTransactionRepository(db)
+	txSvc := application.NewTransactionService(transactionRepo)
+	txH := handler.NewTransactionHandler(txSvc, stockRepo, svc, divSvc, assetSvc)
 
 	quoteH := handler.NewQuoteHandler(assetSvc)
 

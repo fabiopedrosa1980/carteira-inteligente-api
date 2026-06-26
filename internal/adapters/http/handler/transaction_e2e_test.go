@@ -31,7 +31,7 @@ func TestE2E_TransactionCreatesStockAndImportsDividends(t *testing.T) {
 	txRepo := persistence.NewGormTransactionRepository(db)
 	txSvc := application.NewTransactionService(txRepo)
 
-	h := NewTransactionHandler(txSvc, stockRepo, stockSvc, dividendSvc)
+	h := NewTransactionHandler(txSvc, stockRepo, stockSvc, dividendSvc, nil)
 
 	const ticker = "BBAS3"
 
