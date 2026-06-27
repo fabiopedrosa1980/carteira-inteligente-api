@@ -229,9 +229,11 @@ func (h *QuoteHandler) GetQuote(c *gin.Context) {
 
 	// Data anterior a hoje → preço de fechamento naquela data.
 	if date != "" && date < time.Now().Format("2006-01-02") {
-		if q := fetchYahooOnDate(ticker, date); q != nil {
-			q.AssetType = assetType
-			c.JSON(http.StatusOK, q)
+		if q := cachedYahooOnDate(ticker, date); q != nil {
+			// Cópia: o ponteiro é compartilhado no cache (ver cachedYahoo).
+			out := *q
+			out.AssetType = assetType
+			c.JSON(http.StatusOK, out)
 			return
 		}
 		c.JSON(http.StatusOK, QuoteResponse{Ticker: ticker, Found: false, AssetType: assetType})

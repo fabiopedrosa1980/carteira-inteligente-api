@@ -15,6 +15,10 @@ var quoteCache = cache.New()
 
 const quoteTTL = 45 * time.Second
 
+// histQuoteTTL é longo: o fechamento de uma data passada é imutável; só usamos
+// TTL para limitar o uso de memória entre reinícios.
+const histQuoteTTL = 24 * time.Hour
+
 // quoteTuple é o retorno de fetchYahooQuote guardado no cache.
 type quoteTuple struct {
 	price         float64
@@ -51,6 +55,22 @@ func cachedYahoo(ticker string) *QuoteResponse {
 	q := fetchYahoo(ticker)
 	if q != nil {
 		quoteCache.Set(key, q, quoteTTL)
+	}
+	return q
+}
+
+// cachedYahooOnDate envolve fetchYahooOnDate com o cache por ticker+data. Como o
+// chamador só consulta datas passadas (fechamento imutável), usa TTL longo.
+func cachedYahooOnDate(ticker, dateStr string) *QuoteResponse {
+	key := "hist:" + ticker + ":" + dateStr
+	if v, ok := quoteCache.Get(key); ok {
+		if q, ok := v.(*QuoteResponse); ok {
+			return q
+		}
+	}
+	q := fetchYahooOnDate(ticker, dateStr)
+	if q != nil {
+		quoteCache.Set(key, q, histQuoteTTL)
 	}
 	return q
 }
