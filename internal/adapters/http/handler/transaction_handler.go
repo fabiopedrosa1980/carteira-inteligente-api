@@ -280,30 +280,52 @@ func (h *TransactionHandler) ImportTransactions(c *gin.Context) {
 		domain.AssetTypeETFs:  0,
 	}
 	ignored := []dto.ImportIgnored{}
-	seen := map[string]bool{}
-	var txs []*domain.Transaction
+
+	// Agrega por ticker: um ativo pode aparecer em mais de uma aba (ex.: parte
+	// disponível em Acoes e parte emprestada em Empréstimos). Soma as quantidades
+	// e mantém um preço e uma classificação por ticker.
+	type aggregate struct {
+		quantity  float64
+		price     float64
+		assetType domain.AssetType
+	}
+	byTicker := map[string]*aggregate{}
+	var tickerOrder []string
 
 	for _, p := range positions {
-		if seen[p.Ticker] {
+		// Na aba Empréstimos só entram posições do investidor doador (continua
+		// dono); tomador (ativo tomado emprestado) não é posição própria.
+		if p.Sheet == b3import.SheetEmprestimos && !isDoador(p.Natureza) {
 			continue
 		}
-		seen[p.Ticker] = true
+		agg, ok := byTicker[p.Ticker]
+		if !ok {
+			agg = &aggregate{assetType: h.classifyPosition(p)}
+			byTicker[p.Ticker] = agg
+			tickerOrder = append(tickerOrder, p.Ticker)
+		}
+		agg.quantity += p.Quantity
+		if agg.price <= 0 && p.ClosingPrice > 0 {
+			agg.price = p.ClosingPrice
+		}
+	}
 
-		if p.ClosingPrice <= 0 {
-			ignored = append(ignored, dto.ImportIgnored{Ticker: p.Ticker, Reason: "preço de fechamento indisponível"})
+	var txs []*domain.Transaction
+	for _, ticker := range tickerOrder {
+		agg := byTicker[ticker]
+		if agg.price <= 0 {
+			ignored = append(ignored, dto.ImportIgnored{Ticker: ticker, Reason: "preço de fechamento indisponível"})
 			continue
 		}
-
-		assetType := h.classifyPosition(p)
 		txs = append(txs, &domain.Transaction{
 			UserID:    userID,
-			Ticker:    p.Ticker,
-			AssetType: assetType,
-			Quantity:  p.Quantity,
-			Price:     p.ClosingPrice,
+			Ticker:    ticker,
+			AssetType: agg.assetType,
+			Quantity:  agg.quantity,
+			Price:     agg.price,
 			Date:      date,
 		})
-		created[assetType]++
+		created[agg.assetType]++
 	}
 
 	if err := h.service.ImportOverwrite(userID, txs); err != nil {
@@ -332,9 +354,15 @@ func (h *TransactionHandler) ImportTransactions(c *gin.Context) {
 	})
 }
 
+// isDoador indica se a natureza do empréstimo é "Doador" (investidor que
+// emprestou e continua dono do ativo), de forma case-insensitive.
+func isDoador(natureza string) bool {
+	return strings.EqualFold(strings.TrimSpace(natureza), "Doador")
+}
+
 // classifyPosition determina o asset_type da posição: a aba ETF é classificada
-// como ETFs; para a aba Acoes consulta o catálogo da B3 (separa FIIs de Ações),
-// com fallback para Acoes quando o ticker está fora do catálogo.
+// como ETFs; para as abas Acoes e Empréstimos consulta o catálogo da B3 (separa
+// FIIs de Ações), com fallback para Acoes quando o ticker está fora do catálogo.
 func (h *TransactionHandler) classifyPosition(p b3import.Position) domain.AssetType {
 	if p.Sheet == "ETF" {
 		return domain.AssetTypeETFs

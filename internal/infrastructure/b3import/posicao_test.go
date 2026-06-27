@@ -113,6 +113,64 @@ func TestParsePosicao_NumeroPtBR(t *testing.T) {
 	}
 }
 
+// buildEmprestimosXLSX monta um .xlsx com uma aba Empréstimos no layout real da
+// B3 (ticker na coluna Produto, coluna Natureza). rows: {produto, natureza, qtd, preço}.
+func buildEmprestimosXLSX(t *testing.T, rows [][4]string) *bytes.Reader {
+	t.Helper()
+	header := []string{
+		"Produto", "Instituição", "Natureza", "Número de Contrato", "Modalidade",
+		"OPA", "Liquidação antecipada", "Taxa", "Comissão", "Data de registro",
+		"Data de vencimento", "Quantidade", "Preço de Fechamento", "Valor Atualizado",
+	}
+	f := excelize.NewFile()
+	f.SetSheetName("Sheet1", "Empréstimos")
+	for c, h := range header {
+		cell, _ := excelize.CoordinatesToCellName(c+1, 1)
+		f.SetCellStr("Empréstimos", cell, h)
+	}
+	for i, r := range rows {
+		rowNum := i + 2
+		set := func(col int, v string) {
+			cell, _ := excelize.CoordinatesToCellName(col+1, rowNum)
+			f.SetCellStr("Empréstimos", cell, v)
+		}
+		set(0, r[0])  // Produto
+		set(2, r[1])  // Natureza
+		set(11, r[2]) // Quantidade
+		set(12, r[3]) // Preço de Fechamento
+	}
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		t.Fatalf("WriteToBuffer: %v", err)
+	}
+	return bytes.NewReader(buf.Bytes())
+}
+
+func TestParsePosicao_Emprestimos(t *testing.T) {
+	src := buildEmprestimosXLSX(t, [][4]string{
+		{"BBSE3 - BB SEGURIDADE PARTICIPAÇÕES S.A.", "Doador", "71", "38.87"},
+		{"ITUB3 - ITAU UNIBANCO HOLDING S.A.", "Tomador", "150", "44.08"},
+	})
+
+	ps, err := ParsePosicao(src)
+	if err != nil {
+		t.Fatalf("ParsePosicao: %v", err)
+	}
+	// O parser não filtra natureza — devolve ambas as linhas com ticker do Produto.
+	if len(ps) != 2 {
+		t.Fatalf("esperado 2 posições, obtido %d: %+v", len(ps), ps)
+	}
+	if ps[0].Ticker != "BBSE3" || ps[0].Natureza != "Doador" || ps[0].Sheet != SheetEmprestimos {
+		t.Fatalf("posição Doador inesperada: %+v", ps[0])
+	}
+	if ps[0].Quantity != 71 || ps[0].ClosingPrice != 38.87 {
+		t.Fatalf("qtd/preço incorretos: %+v", ps[0])
+	}
+	if ps[1].Ticker != "ITUB3" || ps[1].Natureza != "Tomador" {
+		t.Fatalf("posição Tomador inesperada: %+v", ps[1])
+	}
+}
+
 func TestParsePosicao_ArquivoInvalido(t *testing.T) {
 	if _, err := ParsePosicao(bytes.NewReader([]byte("não é um xlsx"))); err == nil {
 		t.Fatal("esperado erro para arquivo inválido")

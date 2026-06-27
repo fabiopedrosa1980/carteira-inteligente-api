@@ -50,6 +50,36 @@ func buildImportXLSX(t *testing.T) []byte {
 	f.NewSheet("ETF")
 	write("ETF", [][3]string{{"IVVB11", "6", "429.63"}})
 
+	// Aba Empréstimos (layout próprio: ticker em Produto, coluna Natureza).
+	// BBSE3 Doador (incluído), ITUB3 Tomador (ignorado), PETR4 Doador (somado
+	// à posição de PETR4 da aba Acoes → 121 + 50 = 171).
+	empHeader := []string{
+		"Produto", "Instituição", "Natureza", "Número de Contrato", "Modalidade",
+		"OPA", "Liquidação antecipada", "Taxa", "Comissão", "Data de registro",
+		"Data de vencimento", "Quantidade", "Preço de Fechamento", "Valor Atualizado",
+	}
+	f.NewSheet("Empréstimos")
+	for c, h := range empHeader {
+		cell, _ := excelize.CoordinatesToCellName(c+1, 1)
+		f.SetCellStr("Empréstimos", cell, h)
+	}
+	empRows := [][4]string{
+		{"BBSE3 - BB SEGURIDADE PARTICIPAÇÕES S.A.", "Doador", "71", "38.87"},
+		{"ITUB3 - ITAU UNIBANCO HOLDING S.A.", "Tomador", "150", "44.08"},
+		{"PETR4 - PETROLEO BRASILEIRO S.A. PETROBRAS", "Doador", "50", "38.45"},
+	}
+	for i, r := range empRows {
+		rowNum := i + 2
+		set := func(col int, v string) {
+			cell, _ := excelize.CoordinatesToCellName(col+1, rowNum)
+			f.SetCellStr("Empréstimos", cell, v)
+		}
+		set(0, r[0])  // Produto
+		set(2, r[1])  // Natureza
+		set(11, r[2]) // Quantidade
+		set(12, r[3]) // Preço de Fechamento
+	}
+
 	buf, err := f.WriteToBuffer()
 	if err != nil {
 		t.Fatalf("WriteToBuffer: %v", err)
@@ -111,32 +141,45 @@ func TestImportTransactions_SobrepoeERetornaResumo(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode: %v (%s)", err, w.Body.String())
 	}
-	if resp.Created.Acoes != 2 || resp.Created.ETFs != 1 || resp.Created.FIIs != 0 {
+	// Acoes: BBAS3, PETR4, BBSE3 (Doador, classificado como Acoes sem catálogo) = 3;
+	// ETFs: IVVB11 = 1; ITUB3 (Tomador) é ignorado e não conta.
+	if resp.Created.Acoes != 3 || resp.Created.ETFs != 1 || resp.Created.FIIs != 0 {
 		t.Fatalf("resumo inesperado: %+v", resp.Created)
 	}
 
-	// A base deve conter apenas os 3 importados — MANUAL3 foi sobreposto.
+	// A base deve conter apenas os 4 importados — MANUAL3 sobreposto, ITUB3 (Tomador) fora.
 	list, err := txSvc.List(userID, "")
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(list) != 3 {
-		t.Fatalf("esperado 3 lançamentos após sobreposição, obtido %d", len(list))
+	if len(list) != 4 {
+		t.Fatalf("esperado 4 lançamentos após sobreposição, obtido %d", len(list))
 	}
+
+	byTicker := map[string]*domain.Transaction{}
 	for _, tx := range list {
 		if tx.Ticker == "MANUAL3" {
 			t.Fatal("lançamento manual não foi sobreposto")
 		}
-	}
-
-	// A data deve vir do nome do arquivo (2026-06-27).
-	for _, tx := range list {
+		if tx.Ticker == "ITUB3" {
+			t.Fatal("ITUB3 (Tomador) não deveria ter sido importado")
+		}
+		byTicker[tx.Ticker] = tx
+		// A data deve vir do nome do arquivo (2026-06-27).
 		if tx.Date.Format("2006-01-02") != "2026-06-27" {
 			t.Fatalf("data esperada do nome do arquivo, obtido %s", tx.Date.Format("2006-01-02"))
 		}
-		if tx.Ticker == "IVVB11" && tx.AssetType != domain.AssetTypeETFs {
-			t.Fatalf("IVVB11 deveria ser ETFs, obtido %s", tx.AssetType)
-		}
+	}
+
+	if byTicker["IVVB11"] == nil || byTicker["IVVB11"].AssetType != domain.AssetTypeETFs {
+		t.Fatalf("IVVB11 deveria ser ETFs: %+v", byTicker["IVVB11"])
+	}
+	if byTicker["BBSE3"] == nil || byTicker["BBSE3"].Quantity != 71 {
+		t.Fatalf("BBSE3 (Doador) deveria ter 71 cotas: %+v", byTicker["BBSE3"])
+	}
+	// PETR4: 121 (Acoes) + 50 (Empréstimos Doador) = 171.
+	if byTicker["PETR4"] == nil || byTicker["PETR4"].Quantity != 171 {
+		t.Fatalf("PETR4 deveria somar 171 cotas (121 + 50): %+v", byTicker["PETR4"])
 	}
 }
 
