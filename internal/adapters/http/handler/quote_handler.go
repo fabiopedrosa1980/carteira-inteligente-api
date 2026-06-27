@@ -238,9 +238,12 @@ func (h *QuoteHandler) GetQuote(c *gin.Context) {
 		return
 	}
 
-	if q := fetchYahoo(ticker); q != nil {
-		q.AssetType = assetType
-		c.JSON(http.StatusOK, q)
+	if q := cachedYahoo(ticker); q != nil {
+		// Cópia: o ponteiro é compartilhado no cache; setar AssetType direto nele
+		// causaria escrita concorrente entre requisições.
+		out := *q
+		out.AssetType = assetType
+		c.JSON(http.StatusOK, out)
 		return
 	}
 

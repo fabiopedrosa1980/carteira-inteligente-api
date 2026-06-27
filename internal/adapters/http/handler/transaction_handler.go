@@ -436,7 +436,7 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 		wg.Add(1)
 		go func(idx int, p *domain.AcoesPosition) {
 			defer wg.Done()
-			price, changePercent, name, dividendYield := fetchYahooQuote(p.Ticker)
+			price, changePercent, name, dividendYield := cachedYahooQuote(p.Ticker)
 			items[idx] = &domain.AcaoItem{
 				Ticker:           p.Ticker,
 				Name:             name,
