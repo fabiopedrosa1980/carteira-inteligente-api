@@ -26,6 +26,9 @@ func (m *mockTxRepo) GetByID(userID string, id uint) (*domain.Transaction, error
 }
 func (m *mockTxRepo) Delete(userID string, id uint) error { return nil }
 func (m *mockTxRepo) DeleteAll(userID string) error       { return nil }
+func (m *mockTxRepo) ImportOverwrite(userID string, txs []*domain.Transaction) error {
+	return nil
+}
 func (m *mockTxRepo) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return nil, nil
 }

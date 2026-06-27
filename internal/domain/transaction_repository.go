@@ -7,6 +7,9 @@ type TransactionRepository interface {
 	GetByID(userID string, id uint) (*Transaction, error)
 	Delete(userID string, id uint) error
 	DeleteAll(userID string) error
+	// ImportOverwrite substitui atomicamente todos os lançamentos do usuário
+	// pela lista informada (apaga tudo e insere os novos numa única transação).
+	ImportOverwrite(userID string, txs []*Transaction) error
 	GetAcoesPositions(userID string) ([]*AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*AcoesPosition, error)
 	GetEtfsPositions(userID string) ([]*AcoesPosition, error)

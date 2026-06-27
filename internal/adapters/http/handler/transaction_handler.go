@@ -6,15 +6,22 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"carteira-inteligente-api/internal/adapters/http/dto"
 	"carteira-inteligente-api/internal/application"
 	"carteira-inteligente-api/internal/domain"
+	"carteira-inteligente-api/internal/infrastructure/b3import"
 
 	"github.com/gin-gonic/gin"
 )
+
+// posicaoDatePattern extrai a data (AAAA-MM-DD) do nome do arquivo de Posição,
+// ex.: "posicao-2026-06-27-02-37-19.xlsx".
+var posicaoDatePattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
 
 type TransactionHandler struct {
 	service     application.TransactionUseCase
@@ -233,6 +240,127 @@ func (h *TransactionHandler) DeleteAllTransactions(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// ImportTransactions recebe o upload (multipart) da planilha de Posição da B3
+// (.xlsx), parseia as abas Acoes/ETF, classifica cada ticker pelo catálogo e
+// SOBREPÕE atomicamente os lançamentos do usuário pelas posições importadas.
+// Responde com o resumo (contagem por classe + tickers ignorados).
+func (h *TransactionHandler) ImportTransactions(c *gin.Context) {
+	userID := c.GetString("userID")
+
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "arquivo .xlsx é obrigatório (campo 'file')"})
+		return
+	}
+	if !strings.HasSuffix(strings.ToLower(fileHeader.Filename), ".xlsx") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "envie um arquivo .xlsx exportado da B3 (relatório de Posição)"})
+		return
+	}
+
+	src, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "não foi possível ler o arquivo enviado"})
+		return
+	}
+	defer src.Close()
+
+	positions, err := b3import.ParsePosicao(src)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	date := dateFromFilename(fileHeader.Filename)
+
+	created := map[domain.AssetType]int{
+		domain.AssetTypeAcoes: 0,
+		domain.AssetTypeFIIs:  0,
+		domain.AssetTypeETFs:  0,
+	}
+	ignored := []dto.ImportIgnored{}
+	seen := map[string]bool{}
+	var txs []*domain.Transaction
+
+	for _, p := range positions {
+		if seen[p.Ticker] {
+			continue
+		}
+		seen[p.Ticker] = true
+
+		if p.ClosingPrice <= 0 {
+			ignored = append(ignored, dto.ImportIgnored{Ticker: p.Ticker, Reason: "preço de fechamento indisponível"})
+			continue
+		}
+
+		assetType := h.classifyPosition(p)
+		txs = append(txs, &domain.Transaction{
+			UserID:    userID,
+			Ticker:    p.Ticker,
+			AssetType: assetType,
+			Quantity:  p.Quantity,
+			Price:     p.ClosingPrice,
+			Date:      date,
+		})
+		created[assetType]++
+	}
+
+	if err := h.service.ImportOverwrite(userID, txs); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+
+	// Background: para Ações e FIIs, garante o Stock no catálogo e importa o
+	// histórico de proventos (mesmo comportamento do cadastro manual).
+	for _, t := range txs {
+		switch t.AssetType {
+		case domain.AssetTypeAcoes:
+			go h.ensureStockAndImport(t.Ticker, "Ações", false)
+		case domain.AssetTypeFIIs:
+			go h.ensureStockAndImport(t.Ticker, "FIIs", true)
+		}
+	}
+
+	c.JSON(http.StatusOK, dto.ImportResultResponse{
+		Created: dto.ImportCreated{
+			Acoes: created[domain.AssetTypeAcoes],
+			FIIs:  created[domain.AssetTypeFIIs],
+			ETFs:  created[domain.AssetTypeETFs],
+		},
+		Ignored: ignored,
+	})
+}
+
+// classifyPosition determina o asset_type da posição: a aba ETF é classificada
+// como ETFs; para a aba Acoes consulta o catálogo da B3 (separa FIIs de Ações),
+// com fallback para Acoes quando o ticker está fora do catálogo.
+func (h *TransactionHandler) classifyPosition(p b3import.Position) domain.AssetType {
+	if p.Sheet == "ETF" {
+		return domain.AssetTypeETFs
+	}
+	if h.assetSvc != nil {
+		if a, err := h.assetSvc.GetByTicker(p.Ticker); err == nil && a != nil && a.Type != "" {
+			switch domain.AssetType(a.Type) {
+			case domain.AssetTypeFIIs:
+				return domain.AssetTypeFIIs
+			case domain.AssetTypeETFs:
+				return domain.AssetTypeETFs
+			}
+		}
+	}
+	return domain.AssetTypeAcoes
+}
+
+// dateFromFilename extrai a data do nome do arquivo de Posição; usa a data atual
+// como fallback quando o padrão AAAA-MM-DD não está presente.
+func dateFromFilename(name string) time.Time {
+	if m := posicaoDatePattern.FindString(name); m != "" {
+		if d, err := time.Parse("2006-01-02", m); err == nil {
+			return d
+		}
+	}
+	return time.Now()
 }
 
 func (h *TransactionHandler) GetAcoes(c *gin.Context) {

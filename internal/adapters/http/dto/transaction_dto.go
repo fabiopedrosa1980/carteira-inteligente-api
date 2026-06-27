@@ -5,6 +5,26 @@ import (
 	"time"
 )
 
+// ImportCreated contém a contagem de lançamentos criados por classe na
+// importação da planilha de Posição da B3.
+type ImportCreated struct {
+	Acoes int `json:"Acoes"`
+	FIIs  int `json:"FIIs"`
+	ETFs  int `json:"ETFs"`
+}
+
+// ImportIgnored descreve um ticker que não virou lançamento e o motivo.
+type ImportIgnored struct {
+	Ticker string `json:"ticker"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// ImportResultResponse é o resumo devolvido pela importação da planilha.
+type ImportResultResponse struct {
+	Created ImportCreated   `json:"created"`
+	Ignored []ImportIgnored `json:"ignored"`
+}
+
 type CreateTransactionRequest struct {
 	Ticker    string           `json:"ticker"     binding:"required"`
 	AssetType domain.AssetType `json:"asset_type" binding:"required"`

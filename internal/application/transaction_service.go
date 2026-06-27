@@ -9,6 +9,7 @@ type TransactionUseCase interface {
 	GetByID(userID string, id uint) (*domain.Transaction, error)
 	Delete(userID string, id uint) error
 	DeleteAll(userID string) error
+	ImportOverwrite(userID string, txs []*domain.Transaction) error
 	GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetFiisPositions(userID string) ([]*domain.AcoesPosition, error)
 	GetEtfsPositions(userID string) ([]*domain.AcoesPosition, error)
@@ -54,6 +55,15 @@ func (s *TransactionService) Delete(userID string, id uint) error {
 // DeleteAll remove todos os lançamentos do usuário (idempotente).
 func (s *TransactionService) DeleteAll(userID string) error {
 	return s.repo.DeleteAll(userID)
+}
+
+// ImportOverwrite normaliza os tickers e substitui atomicamente os lançamentos
+// do usuário pela lista importada da planilha de Posição da B3.
+func (s *TransactionService) ImportOverwrite(userID string, txs []*domain.Transaction) error {
+	for _, t := range txs {
+		t.Ticker = domain.NormalizeTicker(t.Ticker)
+	}
+	return s.repo.ImportOverwrite(userID, txs)
 }
 
 func (s *TransactionService) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {

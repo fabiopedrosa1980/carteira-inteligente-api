@@ -57,6 +57,22 @@ func (r *GormTransactionRepository) DeleteAll(userID string) error {
 	return r.db.Where("user_id = ?", userID).Delete(&domain.Transaction{}).Error
 }
 
+// ImportOverwrite apaga todos os lançamentos do usuário e insere os novos numa
+// única transação de banco. Em qualquer falha, o rollback preserva a base atual.
+func (r *GormTransactionRepository) ImportOverwrite(userID string, txs []*domain.Transaction) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("user_id = ?", userID).Delete(&domain.Transaction{}).Error; err != nil {
+			return err
+		}
+		if len(txs) > 0 {
+			if err := tx.Create(&txs).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (r *GormTransactionRepository) GetAcoesPositions(userID string) ([]*domain.AcoesPosition, error) {
 	return r.aggregatePositions(userID, domain.AssetTypeAcoes)
 }
