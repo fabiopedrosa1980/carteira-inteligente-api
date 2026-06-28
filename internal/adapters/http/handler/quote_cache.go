@@ -25,22 +25,24 @@ type quoteTuple struct {
 	changePercent float64
 	name          string
 	dividendYield float64
+	high52        float64
+	low52         float64
 }
 
 // cachedYahooQuote envolve fetchYahooQuote com o cache por ticker. Só guarda
 // respostas válidas (preço > 0) para não fixar falhas transitórias do provedor.
-func cachedYahooQuote(ticker string) (price, changePercent float64, name string, dividendYield float64) {
+func cachedYahooQuote(ticker string) (price, changePercent float64, name string, dividendYield, high52, low52 float64) {
 	key := "quote:" + ticker
 	if v, ok := quoteCache.Get(key); ok {
 		if t, ok := v.(quoteTuple); ok {
-			return t.price, t.changePercent, t.name, t.dividendYield
+			return t.price, t.changePercent, t.name, t.dividendYield, t.high52, t.low52
 		}
 	}
-	price, changePercent, name, dividendYield = fetchYahooQuote(ticker)
+	price, changePercent, name, dividendYield, high52, low52 = fetchYahooQuote(ticker)
 	if price > 0 {
-		quoteCache.Set(key, quoteTuple{price, changePercent, name, dividendYield}, quoteTTL)
+		quoteCache.Set(key, quoteTuple{price, changePercent, name, dividendYield, high52, low52}, quoteTTL)
 	}
-	return price, changePercent, name, dividendYield
+	return price, changePercent, name, dividendYield, high52, low52
 }
 
 // cachedYahoo envolve fetchYahoo (cotação ao vivo de /quote) com o cache por

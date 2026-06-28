@@ -55,6 +55,10 @@ type AcaoItem struct {
 	TransactionCount int         `json:"transaction_count"`
 	Indicators       []Indicator `json:"indicators,omitempty"`
 	CompanyInfo      []Indicator `json:"company_info,omitempty"`
+	// Faixa de 52 semanas (Yahoo). Usada pelo front no veredito de oportunidade
+	// dos ETFs (posição do preço atual na faixa). 0/omisso quando indisponível.
+	FiftyTwoWeekHigh float64 `json:"fifty_two_week_high,omitempty"`
+	FiftyTwoWeekLow  float64 `json:"fifty_two_week_low,omitempty"`
 }
 
 // Indicator é um indicador fundamentalista no formato rótulo/valor, com o valor

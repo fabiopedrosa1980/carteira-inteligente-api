@@ -132,7 +132,7 @@ func (h *TransactionHandler) ensureStockAndImport(ticker, sector string, fii boo
 		}
 	}
 
-	price, _, name, dy := fetchYahooQuote(ticker)
+	price, _, name, dy, _, _ := fetchYahooQuote(ticker)
 	if price <= 0 {
 		// CurrentPrice precisa ser > 0 para passar na validação do domínio.
 		price = 0.01
@@ -436,7 +436,7 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 		wg.Add(1)
 		go func(idx int, p *domain.AcoesPosition) {
 			defer wg.Done()
-			price, changePercent, name, dividendYield := cachedYahooQuote(p.Ticker)
+			price, changePercent, name, dividendYield, high52, low52 := cachedYahooQuote(p.Ticker)
 			items[idx] = &domain.AcaoItem{
 				Ticker:           p.Ticker,
 				Name:             name,
@@ -450,6 +450,8 @@ func (h *TransactionHandler) respondPositions(c *gin.Context, fetch func(string)
 				TransactionCount: p.TransactionCount,
 				Indicators:       indicatorsByTicker[p.Ticker],
 				CompanyInfo:      companyInfoByTicker[p.Ticker],
+				FiftyTwoWeekHigh: high52,
+				FiftyTwoWeekLow:  low52,
 			}
 		}(i, pos)
 	}
@@ -520,19 +522,19 @@ func round1(v float64) float64 {
 	return math.Round(v*10) / 10
 }
 
-func fetchYahooQuote(ticker string) (price, changePercent float64, name string, dividendYield float64) {
+func fetchYahooQuote(ticker string) (price, changePercent float64, name string, dividendYield, high52, low52 float64) {
 	client := &http.Client{Timeout: 6 * time.Second}
 	url := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s.SA?interval=1d&range=1y&events=div", ticker)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return 0, 0, ticker, 0
+		return 0, 0, ticker, 0, 0, 0
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
 	req.Header.Set("Accept", "*/*")
 
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return 0, 0, ticker, 0
+		return 0, 0, ticker, 0, 0, 0
 	}
 	defer resp.Body.Close()
 
@@ -544,6 +546,8 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 					ChartPreviousClose float64 `json:"chartPreviousClose"`
 					LongName           string  `json:"longName"`
 					ShortName          string  `json:"shortName"`
+					FiftyTwoWeekHigh   float64 `json:"fiftyTwoWeekHigh"`
+					FiftyTwoWeekLow    float64 `json:"fiftyTwoWeekLow"`
 				} `json:"meta"`
 				Indicators struct {
 					Quote []struct {
@@ -561,7 +565,7 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&yr); err != nil || len(yr.Chart.Result) == 0 {
-		return 0, 0, ticker, 0
+		return 0, 0, ticker, 0, 0, 0
 	}
 
 	result := yr.Chart.Result[0]
@@ -601,7 +605,43 @@ func fetchYahooQuote(ticker string) (price, changePercent float64, name string, 
 		dy = sumDividends / meta.RegularMarketPrice * 100
 	}
 
-	return meta.RegularMarketPrice, cp, n, dy
+	// Faixa de 52 semanas: prefere os campos do meta (Yahoo); se ausentes,
+	// deriva da série diária de 1 ano (range=1y) já baixada.
+	high52 = meta.FiftyTwoWeekHigh
+	low52 = meta.FiftyTwoWeekLow
+	if high52 == 0 || low52 == 0 {
+		if h, l, ok := minMaxValid(closes); ok {
+			if high52 == 0 {
+				high52 = h
+			}
+			if low52 == 0 {
+				low52 = l
+			}
+		}
+	}
+
+	return meta.RegularMarketPrice, cp, n, dy, high52, low52
+}
+
+// minMaxValid retorna o maior e o menor valor positivo de uma série de closes.
+// ok é falso quando não há nenhum valor válido.
+func minMaxValid(values []float64) (high, low float64, ok bool) {
+	for _, v := range values {
+		if v <= 0 {
+			continue
+		}
+		if !ok {
+			high, low, ok = v, v, true
+			continue
+		}
+		if v > high {
+			high = v
+		}
+		if v < low {
+			low = v
+		}
+	}
+	return high, low, ok
 }
 
 // previousDailyClose deriva o fechamento do pregão anterior a partir da série
